@@ -1,4 +1,6 @@
-
+clc;
+clear all;
+close all;
 
 % File: IntegratedCode.m
 
