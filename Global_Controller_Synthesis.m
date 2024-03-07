@@ -24,43 +24,68 @@ disp(B);
 % Number of DGs
 N = 4; 
 
-% Assuming Ll_values is a cell array containing the values for the lines
-Ll_values = {L1_value, L2_value, L3_value, L4_value}; % Replace with actual values
+ %creating the C Matrix. 
+c_11=[B(1,1)/Ll_values(1), 0 , 0];
+c_21=[B(2,1)/Ll_values(1), 0 , 0];
+c_31=[B(3,1)/Ll_values(1), 0 , 0];
+c_41=[B(4,1)/Ll_values(1), 0 , 0];
 
-% Create the incidence matrix B (as shown in the previous code)
+c_12=[B(1,2)/Ll_values(2), 0 , 0];
+c_22=[B(2,2)/Ll_values(2), 0 , 0];
+c_32=[B(3,2)/Ll_values(2), 0 , 0];
+c_42=[B(4,2)/Ll_values(2), 0 , 0];
 
-% Initialize the matrix C
-C = zeros(numDGs * (numLines - 1), numLines);
+c_13=[B(1,3)/Ll_values(3), 0 , 0];
+c_23=[B(2,3)/Ll_values(3), 0 , 0];
+c_33=[B(3,3)/Ll_values(3), 0 , 0];
+c_43=[B(4,3)/Ll_values(3), 0 , 0];
 
-% Populate the C matrix
-for i = 1:numDGs
-    for l = 1:numLines
-        % Skip the last line for each DG
-        if l ~= numLines
-            index = (i - 1) * (numLines - 1) + l;
-            C(index, l) = B(i, l) / Ll_values{l};
-        end
-    end
-end
+c_14=[B(1,4)/Ll_values(4), 0 , 0];
+c_24=[B(2,4)/Ll_values(4), 0 , 0];
+c_34=[B(3,4)/Ll_values(4), 0 , 0];
+c_44=[B(4,4)/Ll_values(4), 0 , 0];
 
-% Display the resulting matrix C
-disp('Matrix C:');
-disp(C);
+C=[c_11,c_12,c_13,c_14;
+    c_21,c_22,c_23,c_24;
+    c_31, c_32,c_33,c_34;
+    c_41,c_42,c_43,c_44];
 
-
-
-
-
-
-% % Creating some matrices
-% for line = 1:1:numLines
-%     C = [B / Ll_values(line), 0, 0];
+% In this part, I created a compact form.
+% C = zeros(4, 12);
+% 
+% for i = 1:4
+%     for j = 1:4
+%         C(i, (j-1)*3 + 1:(j-1)*3 + 3) = [B(i, j) / Ll_values(j), 0, 0];
+%     end
 % end
 
 
-for dg = 1:1:numDGs
-    BarC = [-B / C_values(dg), 0, 0]';
-end
+%creating BarC Matrix:
+Barc_11=[-B(1,1)/C_values(1) ; 0 ; 0];
+Barc_21=[-B(2,1)/C_values(2) ; 0 ; 0];
+Barc_31=[-B(3,1)/C_values(3) ; 0 ; 0];
+Barc_41=[-B(4,1)/C_values(4) ; 0 ; 0];
+
+Barc_12=[-B(1,2)/C_values(1) ; 0 ; 0];
+Barc_22=[-B(2,2)/C_values(2) ; 0 ; 0];
+Barc_32=[-B(3,2)/C_values(3) ; 0 ; 0];
+Barc_42=[-B(4,2)/C_values(4) ; 0 ; 0];
+
+Barc_13=[-B(1,3)/C_values(1) ; 0 ; 0];
+Barc_23=[-B(2,3)/C_values(2) ; 0 ; 0];
+Barc_33=[-B(3,3)/C_values(3) ; 0 ; 0];
+Barc_43=[-B(4,3)/C_values(4) ; 0 ; 0];
+
+Barc_14=[-B(1,4)/C_values(1) ; 0 ; 0];
+Barc_24=[-B(2,4)/C_values(2) ; 0 ; 0];
+Barc_34=[-B(3,4)/C_values(3) ; 0 ; 0];
+Barc_44=[-B(4,4)/C_values(4) ; 0 ; 0];
+
+BarC=[Barc_11, Barc_12, Barc_13, Barc_14;
+    Barc_21, Barc_22, Barc_23, Barc_24;
+    Barc_31, Barc_32, Barc_33, Barc_34;
+    Barc_41, Barc_42, Barc_43, Barc_44];
+
 
 
 D = blkdiag(0, 0, 1);
@@ -107,6 +132,7 @@ costMatBlock = cell2mat(costMatBlock);
 solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0);
 I = eye(3 * N);
 I_n = eye(3);
+I_bar = eye(1);
 O = zeros(3 * N);
 
 % Whether to use a soft or hard graph constraint
@@ -114,6 +140,7 @@ isSoft = 1;
 
 Q = sdpvar(3*N, 3*N, 'full'); 
 P = sdpvar(N, N, 'diagonal');
+BarP = sdpvar(4, 4, 'full');
 gammaSq = sdpvar(1, 1, 'full');
 
 X_11=[];
@@ -134,13 +161,13 @@ for i = 1:N
 
     X_11= blkdiag(X_11, -nu_i * I_n);
     X_p_11 = blkdiag(X_p_11, -nu_i * P(i, i) * I_n);
-    BarX_Barp_11 = blkdiag(BarX_Barp_11, -nuBar_i * P(i, i) * I_n);
+    BarX_Barp_11 = blkdiag(BarX_Barp_11, -nuBar_i * BarP(i, i) * I_bar);
     X_p_12 = blkdiag(X_p_12, 0.5 * P(i, i) * I_n);
-    BarX_p_12 = blkdiag(BarX_p_12, 0.5 * P(i, i) * I_n);
+    BarX_p_12 = blkdiag(BarX_p_12, 0.5 * BarP(i, i) * I_bar);
     X_12 = blkdiag(X_12, (-1 / (2 * nu_i)) * I_n);
-    BarX_12 = blkdiag(BarX_12, (-1 / (2 * nuBar_i)) * I_n);
+    BarX_12 = blkdiag(BarX_12, (-1 / (2 * nuBar_i)) * I_bar);
     X_p_22 = blkdiag(X_p_22, -rho_i * P(i, i) * I_n);
-    BarX_Barp_22 = blkdiag(BarX_Barp_22, -rhoBar_i * P(i, i) * I_n);
+    BarX_Barp_22 = blkdiag(BarX_Barp_22, -rhoBar_i * BarP(i, i) * I_bar);
 end
 
 X_p_21 = X_p_12';
