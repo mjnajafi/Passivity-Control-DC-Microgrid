@@ -1,4 +1,4 @@
-% File: IntegratedCode.m
+
 
 % First Code - Generating 4 A matrices
 numDGs = 4;
