@@ -1,8 +1,7 @@
 clc;
-clear all;
 close all;
 
-% File: IntegratedCode.m
+
 
 % First Code - Generating 4 A matrices
 numLines = 4;
