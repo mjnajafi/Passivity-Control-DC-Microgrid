@@ -1,4 +1,6 @@
-
+clc;
+clear all;
+close all;
 
 % First Code - Generating 4 A matrices
 numDGs = 4;
@@ -8,6 +10,8 @@ initial_R = 0.01;
 initial_L = 1e-2;  
 initial_C = 2.2e-3;  
 initial_Y = 0.2;  
+
+L_t=1/initial_L;
 
 % Initialize cell arrays to store results
 PValues = cell(1, numDGs);
@@ -38,7 +42,7 @@ for dg = 1:numDGs
     BMatrix = B{dg};
 
     % Second Code (function) for each A matrix
-    [PVal, KVal, LVal, nuVal, rhoVal] = ComputeParametersForDGs(AMatrix, BMatrix);
+    [PVal, KVal, LVal, nuVal, rhoVal, statusLocalControllerDG] = ComputeParametersForDGs(AMatrix, BMatrix);
 
     % Store results
     PValues{dg} = PVal;
@@ -46,6 +50,7 @@ for dg = 1:numDGs
     LValues{dg} = LVal;
     nuValues{dg} = nuVal;
     rhoValues{dg} = rhoVal;
+    statusLocalControllerDGValues{dg} = statusLocalControllerDG
 
     % Display results for each A matrix
     disp(['Results for A matrix ', num2str(dg), ':']);
@@ -67,25 +72,16 @@ end
 % ...
 
 % Function to compute parameters for DGs
-function [PVal, KVal, LVal, nuVal, rhoVal] = ComputeParametersForDGs(A, B)
-    % Constants for constraints
-    nuBar = -40;
-    rhoBar = 15;
-    rhoBarBar = 1/rhoBar;
-
-    % Constraints for nuHat, rhoHat, and global design
-    nuHat = -0.01;
-    rhoHat = 0.01;
-    rhoHatBar = 1/rhoHat;
-    gammaSqBar = 10;
-
+function [PVal, KVal, LVal, nuVal, rhoVal, statusLocalControllerDG] = ComputeParametersForDGs(A, B,pVal)
+    
     % Set up the LMI problem
-    solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0);
+    solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1);
     P = sdpvar(3, 3, 'symmetric');
     K = sdpvar(1, 3, 'full');
     rhoTilde = sdpvar(1, 1, 'full'); % Representing: 1/rho
     nu = sdpvar(1, 1, 'full');
-
+    gammaSq = sdpvar(1,1,'full');
+    
     % Basic Constraints
     con1 = P >= 0;
 
@@ -94,23 +90,46 @@ function [PVal, KVal, LVal, nuVal, rhoVal] = ComputeParametersForDGs(A, B)
     MMat = [P, zeros(3)];
     ThetaMat = [-A*P - P*A' - B*K - K'*B', -eye(3) + 0.5*P; -eye(3) + 0.5*P, -nu*eye(3)];
     W = [DMat, MMat; MMat', ThetaMat];
-    con3 = W >= 0;
+    con2 = W >= 0;
+    pVal = 1;
+    % Constants for constraints
+    % nuBar = -100;
+    % For: nuBar < nu < nuHat < 0
+    nuBar = -gammaSq/pVal;
+
+    % For: 0 < rhoHat1,rhoHat2 < rho < rhoBar
+    % For: 0 < rhoTildeHat < rhoTilde < rhoTildeBar1,rhoTildeBar2
+    rhoTildeBar1 = 4*gammaSq/pVal;
+    rhoTildeBar2 = pVal;
+
+    % rhoBar = 50;
+    % rhoBarBar = 1/rhoBar;
+
+    % Constraints for nuHat, rhoHat, and global design
+    % nuHat = -0.01;
+    % rhoHat = 0.01;
+    % rhoHatBar = 1/rhoHat;
+    % gammaSqBar = 10;
 
     % Modesty constraints on resulting nu and rho from the local design
-    con4 = nu >= nuBar;
-    con5 = rhoTilde >= rhoBarBar;
+    con3 = nu >= nuBar;
+    % 0 < rhoTildeHat < rhoTilde < rhoTildeBar1,rhoTildeBar2  
+    con4 = rhoTilde <= rhoTildeBar1;    % Helps global design
+    con5 = rhoTilde <= rhoTildeBar2;    % Helps global design
+
+    % con5 = rhoTilde >= rhoBarBar;
 
     % Global design constraints
-    con8 = nu >= -gammaSqBar/(1/5); % nu >= -50
-    con9 = rhoTilde <= 4*gammaSqBar/(1/5); % rhoBar >= 200
+    % con8 = nu >= -gammaSqBar/(1/5); % nu >= -50
+    % con9 = rhoTilde <= 4*gammaSqBar/(1/5); % rhoBar >= 200
 
     % Total Cost and Constraints
-    constraints = [con1, con3, con4, con5, con8, con9];
+    constraints = [con1, con2, con3, con4, con5];
     costFunction = 0.0000001*(-nu + rhoTilde);
 
     % Solution
     sol = optimize(constraints, costFunction, solverOptions);
-    status = sol.problem == 0;
+    statusLocalControllerDG = sol.problem == 0;
 
     % Extract optimal values
     PVal = value(P);
