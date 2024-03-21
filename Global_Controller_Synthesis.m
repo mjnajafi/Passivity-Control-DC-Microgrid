@@ -1,3 +1,6 @@
+% Reference Voltage
+V_ref= 48;
+
 % Number of DGs and lines
 numDGs = 4;
 numLines = 4;
@@ -89,7 +92,7 @@ BarC=[Barc_11, Barc_12, Barc_13, Barc_14;
 
 
 D = blkdiag(0, 0, 1);
-D=kron(eye(4), D)
+D = kron(eye(4), D);
 % % Load local controllers and resulting passivity indices
 % for i = 1:N
 %     p_i = pVals(i);
@@ -129,21 +132,24 @@ nullMatBlock = cell2mat(nullMatBlock);
 costMatBlock = cell2mat(costMatBlock);
 
 % Set up the LMI problem
-solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0);
+solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1);
 I = eye(3 * N);
 I_n = eye(3);
 I_bar = eye(1);
-O = zeros(3 * N);
+O_n = zeros(3 * N);
+O_bar=zeros(N);
+O = zeros([12 4]);
+
 
 % Whether to use a soft or hard graph constraint
 isSoft = 1;
 
 Q = sdpvar(3*N, 3*N, 'full'); 
 P = sdpvar(N, N, 'diagonal');
-BarP = sdpvar(4, 4, 'full');
+BarP = sdpvar(4, 4, 'diagonal');
 gammaSq = sdpvar(1, 1, 'full');
 
-X_11=[];
+
 X_p_11 = [];
 BarX_Barp_11 = [];
 X_p_12 = [];
@@ -159,7 +165,6 @@ for i = 1:N
     nuBar_i = nuValues_Bar{i};
     rhoBar_i = rhoValues_Bar{i};
 
-    X_11= blkdiag(X_11, -nu_i * I_n);
     X_p_11 = blkdiag(X_p_11, -nu_i * P(i, i) * I_n);
     BarX_Barp_11 = blkdiag(BarX_Barp_11, -nuBar_i * BarP(i, i) * I_bar);
     X_p_12 = blkdiag(X_p_12, 0.5 * P(i, i) * I_n);
@@ -175,6 +180,7 @@ BarX_p_21 = BarX_p_12';
 X_21 = X_12';
 BarX_21 = BarX_12';
 
+
 % Objective Function
 costFun0 = sum(sum(Q .* costMatBlock));
 
@@ -185,18 +191,18 @@ con0 = costFun0 >= 0.0001;
 con1 = P >= 0;
 
 % Constraints related to the LMI problem
-con2 = [X_p_11, O, O, Q, X_p_11 * BarC, X_p_11;
-        O, BarX_Barp_11, O, BarX_Barp_11 * C, O, O;
-        O, O, I, D, O, O;
-        Q', C' * BarX_Barp_11, D', -Q' * X_12 - X_21 * Q - X_p_22, -X_21 * X_11 * BarC - X_11 * C * BarX_12, -X_21 * X_p_11;
-        BarC' * X_p_11, O, O, -X_p_11 * BarC * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22, O;
-        X_p_11, O, O, -X_p_11 * X_12, O, gammaSq * I] >= 0;
+con2 = [X_p_11, O, O_n, Q, X_p_11 * BarC, X_p_11;
+        O', BarX_Barp_11, O', BarX_Barp_11 * C, O_bar, O';
+        O_n, O, I, D, O, O_n;
+        Q', C' * BarX_Barp_11, D', -Q' * X_12 - X_21 * Q - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11 * BarX_12, -X_21 * X_p_11;
+        BarC' * X_p_11, O_bar, O', -BarC' * X_p_11 * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22, O';
+        X_p_11, O, O_n, -X_p_11 * X_12, O, gammaSq * I] >= 0;
 
 % Structural constraints
-% con3 = Q .* (nullMatBlock == 1) == O;  % Structural limitations (due to the format of the control law)
+con3 = Q .* (nullMatBlock == 1) == zeros(12,12);  % Structural limitations (due to the format of the control law)
 % con4 = Q .* (adjMatBlock == 0) == O;   % Graph structure: hard constraint
 
-constraints = [con0, con1, con2];
+constraints = [con0, con1, con2,con3];
 % Total Cost and Constraints
 % if isSoft
 %     % Soft constraints (without the hard graph constraint con7)
