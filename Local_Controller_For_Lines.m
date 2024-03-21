@@ -1,7 +1,6 @@
-clc;
-close all;
 
 
+% File: IntegratedCode.m
 
 % First Code - Generating 4 A matrices
 numLines = 4;
@@ -35,7 +34,7 @@ for line = 1:numLines
     BMatrix = B{line};
 
     % Second Code (function) for each A matrix
-    [PVal, KVal, LVal, nuVal, rhoVal] = ComputeParametersForLines(AMatrix, BMatrix);
+    [PVal, KVal, LVal, nuVal, rhoVal, statusLocalControllerLine] = ComputeParametersForLines(AMatrix, BMatrix);
 
     % Store results
     PValues_Bar{line} = PVal;
@@ -43,6 +42,7 @@ for line = 1:numLines
     LValues_Bar{line} = LVal;
     nuValues_Bar{line} = nuVal;
     rhoValues_Bar{line} = rhoVal;
+    statusLocalControllerLineValues{line} = statusLocalControllerLine
 
     % Display results for each A matrix
     disp(['Results for A matrix ', num2str(line), ':']);
@@ -62,7 +62,7 @@ end
 
 
 
-function [PVal, KVal, LVal, nuVal, rhoVal] = ComputeParametersForLines(A, B)
+function [PVal, KVal, LVal, nuVal, rhoVal, statusLocalControllerLine] = ComputeParametersForLines(A, B)
     % Constants for constraints
     nuBar = -40;
     rhoBar = 15;
@@ -75,7 +75,7 @@ function [PVal, KVal, LVal, nuVal, rhoVal] = ComputeParametersForLines(A, B)
     gammaSqBar = 10;
 
     % Set up the LMI problem
-    solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0);
+    solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1);
     P = sdpvar(1, 1, 'symmetric');
     K = sdpvar(1, 1, 'full');
     rhoTilde = sdpvar(1, 1, 'full'); % Representing: 1/rho
@@ -105,7 +105,7 @@ function [PVal, KVal, LVal, nuVal, rhoVal] = ComputeParametersForLines(A, B)
 
     % Solution
     sol = optimize(constraints, costFunction, solverOptions);
-    status = sol.problem == 0;
+    statusLocalControllerLine = sol.problem == 0;
 
     % Extract optimal values
     PVal = value(P);
