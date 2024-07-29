@@ -3,13 +3,17 @@ Distributed Dissipativity-Based Controller and Topology Co-Design for DC Microgr
 This repository contains the simulation files associated with the paper:
 
 Distributed Dissipativity-Based Controller and Topology Co-Design for DC Microgrids
+
 Mohammad Javad Najafirad, Shirantha Welikala
+
 Link to paper
 
 Overview
+
 This repository includes simulation files that implement the distributed control approach proposed in our paper. The approach focuses on voltage regulation in DC microgrids (MGs) which consist of interconnected distributed generators (DGs), distribution lines, and loads.
 
 Key Features
+
 Distributed Control Approach: Describes the closed-loop DC MG with a distributed controller as a networked system, with DGs and lines as subsystems interconnected via a static interconnection matrix.
 Controller Design: Uses dissipative properties of subsystems to formulate a global linear matrix inequality (LMI) problem for controller gain design.
 Local Controller Design: Proposes a local controller for each DG and line subsystem through a local LMI problem.
