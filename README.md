@@ -41,6 +41,3 @@ For any questions or issues, please contact:
 
 Mohammad Javad Najafirad: mnajafir@stevens.edu
 
-License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
