@@ -43,7 +43,7 @@ for line = 1:numLines
     W = [(2*PBar{line}*Rl{line})/Ll{line} - rhoBar{line}, -PBar{line}/Ll{line} + 1/2;
          -PBar{line}/Ll{line} + 1/2, -nuBar{line}];
     
-    pBarVal = 1;
+    pBarVal = 1; % This value is predefined. 
 
     constraints = [constraints, W >= 0];
 
