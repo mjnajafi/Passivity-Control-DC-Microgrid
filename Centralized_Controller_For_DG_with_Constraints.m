@@ -54,7 +54,7 @@ for dg = 1:numDGs
                 -eye(3) + 0.5*P{dg}, -nu{dg}*eye(3)];
     W = [DMat, MMat; MMat', ThetaMat];
 
-    pVal = 1;
+    pVal = 1; % This value is predefined. 
 
     constraints = [constraints, W >= 0];
 
@@ -81,6 +81,7 @@ for dg = 1:numDGs
     KVal = value(K{dg});
     LVal = KVal / PVal;
     nuVal = value(nu{dg});
+    rhoTildeVal = value(rhoTilde{dg});
     rhoVal = 1 / value(rhoTilde{dg});
 
     % Display results for each DG
@@ -88,9 +89,12 @@ for dg = 1:numDGs
     disp(PVal);
     disp(['nu Values for DG #', num2str(dg), ':']);
     disp(nuVal);
+    disp(['rhoTilde Values for DG #', num2str(dg), ':']);
+    disp(rhoTildeVal);
     disp(['rho Values for DG #', num2str(dg), ':']);
     disp(rhoVal);
     disp(['L Values (Local Controller Gains) for DG #', num2str(dg), ':']);
     disp(LVal);
+    
     disp('-------------------------------');
 end
