@@ -1,5 +1,8 @@
-function [PBarVal, nuBarVal, rhoBarVal, status] = ComputePassivityForLines(Ll, Rl)
+function [PBarVal, nuBarVal, rhoBarVal, status] = ComputePassivityForLines(Line)
     
+    Ll = Line.L;
+    Rl = Line.R;
+
     solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0);
     PBar = sdpvar(1, 1, 'symmetric');
     nuBar = sdpvar(1, 1, 'full');

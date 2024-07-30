@@ -1,5 +1,10 @@
-function [PVal, KVal, LVal, nuVal, rhoVal, status] = ComputePassivityForDGs(A_DG, B_DG)
+function [PVal, KVal, LVal, nuVal, rhoVal, status] = ComputePassivityForDGs(DG)
     
+    
+    A_DG = DG.A;
+    B_DG = DG.B;
+
+
     solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0);
     P = sdpvar(3, 3, 'symmetric');
     K = sdpvar(1, 3, 'full');
@@ -19,7 +24,8 @@ function [PVal, KVal, LVal, nuVal, rhoVal, status] = ComputePassivityForDGs(A_DG
     % Defined Constraints 
     con2 = W >= 0;
 
-    con3 = -100 <= nu & nu <= 100;
+    con3_1 = -100 <= nu 
+    con3_2 = nu <= 100;
     con4 = -100 <= rhoTilde & rhoTilde <= 100;
 
     % Total Constraints
