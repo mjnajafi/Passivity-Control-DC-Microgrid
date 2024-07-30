@@ -1,0 +1,176 @@
+DC Microgrids Simulator
+clc;
+clear;
+close all;
+
+
+% Number of Distributed Generators (DGs)
+numDGs = 4;
+
+% Initial parameter values for DGs
+initial_R = 0.02;
+initial_L = 0.01;
+initial_C = 0.0022;
+initial_Load = 0.3;
+initial_Y = 1/initial_Load;
+
+% Initialize matrices to store system parameters
+A_DG = cell(1, numDGs);
+B_DG = cell(1, numDGs);
+
+% Generate A and B matrices for each DG
+for dg = 1:numDGs
+    R_values(dg) = initial_R + 0.01*rand();
+    L_values(dg) = initial_L + 0.01*rand();
+    C_values(dg) = initial_C + 0.001*rand();
+    Y_values(dg) = initial_Y + 0.1*rand();
+
+    A_DG{dg} = [-Y_values(dg)/C_values(dg), 1/C_values(dg), 0;
+                -1/L_values(dg), -R_values(dg)/L_values(dg), 0;
+                1, 0, 0];
+    B_DG{dg} = [0; 1/L_values(dg); 0];
+end
+
+% Initialize cell arrays to store results
+PValues = cell(1, numDGs);
+KValues = cell(1, numDGs);
+LValues = cell(1, numDGs);
+nuValues = cell(1, numDGs);
+rhoValues = cell(1, numDGs);
+statusValues = cell(1, numDGs);
+Initializing the DG parameters
+Initializing the Line parameters
+% Number of Lines
+numLines = 4;
+
+% Initial parameter values for Lines
+initial_Ll = 0.01;  
+initial_Rl = 0.02;  
+
+% Initialize matrices to store system parameters
+Ll = cell(1, numLines);
+Rl = cell(1, numLines);
+
+% Generate L and R values for each line
+for line = 1:numLines
+    Ll{line} = initial_Ll + 0.01*rand();
+    Rl{line} = initial_Rl + 0.01*rand();
+end
+
+% Decision variables for all lines
+PBar = cell(1, numLines); 
+nuBar = cell(1, numLines); 
+rhoBar = cell(1, numLines); 
+
+
+For loops for DGs and lines
+
+% for dg = 1:numDGs
+%     % Add slight variations to the initial values
+%     R_values(dg) = initial_R + 0.01*rand();
+%     L_values(dg) = initial_L + 0.01*rand();
+%     C_values(dg) = initial_C + 0.001*rand();
+%     Y_values(dg) = initial_Y + 0.1*rand();
+% 
+%     A_DG{dg} = [-Y_values(dg)/C_values(dg), 1/C_values(dg), 0; 
+%              -1/L_values(dg), -R_values(dg)/L_values(dg), 0;
+%               1, 0, 0];
+%     B_DG{dg} = [0; 1/L_values(dg); 0];
+% 
+% 
+%     % Compute parameters for DGs
+%     [PVal, KVal, LVal, nuVal, rhoVal, status] = ComputePassivityForDGs(A_DG{dg}, B_DG{dg});
+% 
+% 
+%     % Store results
+%     PValues{dg} = PVal;
+%     KValues{dg} = KVal;
+%     LValues{dg} = LVal;
+%     nuValues{dg} = nuVal;
+%     rhoValues{dg} = rhoVal;
+%     statusValues{dg} = status;
+% 
+%     % Display results for each DG
+%     disp(['P Values for DG #', num2str(dg), ':']);
+%     disp(PVal);
+%     disp(['nu Values for DG #', num2str(dg), ':']);
+%     disp(nuVal);
+%     disp(['rho Values for DG #', num2str(dg), ':']);
+%     disp(rhoVal);
+%     disp(['L Values for DG #', num2str(dg), ':']);
+%     disp(LVal);
+%     disp('-------------------------------');
+% end
+% 
+% % Loop through each DG
+% for line = 1:numLines
+% 
+%     Ll{line} = initial_Ll + 0.01*rand();
+%     Rl{line} = initial_Rl + 0.01*rand();
+% 
+% 
+%     % Compute parameters for DGs
+%     [PBarVal, nuBarVal, rhoBarVal, status] = ComputePassivityForLines(Ll{line}, Rl{line});
+% 
+%     % Store results
+%     PBarValues{line} = PBarVal;
+%     nuBarValues{line} = nuBarVal;
+%     rhoBarValues{line} = rhoBarVal;
+%     statusValues{line} = status;
+% 
+%     % Display results for each DG
+%     disp(['PBar Values for Line #', num2str(line), ':']);
+%     disp(PBarVal);
+%     disp(['nuBar Values for Line #', num2str(line), ':']);
+%     disp(nuBarVal);
+%     disp(['rhoBar Values for Line #', num2str(line), ':']);
+%     disp(rhoBarVal);
+%     disp('-------------------------------');
+% end
+
+
+Results:
+% % Extract and display results
+% for dg = 1:numDGs
+%     PVal = value(P{dg});
+%     KVal = value(K{dg});
+%     LVal = KVal / PVal;
+%     nuVal = value(nu{dg});
+%     rhoTildeVal = value(rhoTilde{dg});
+%     rhoVal = 1 / value(rhoTilde{dg});
+% 
+%     % Display results for each DG
+%     disp(['P Values for DG #', num2str(dg), ':']);
+%     disp(PVal);
+%     disp(['nu Values for DG #', num2str(dg), ':']);
+%     disp(nuVal);
+%     disp(['rhoTilde Values for DG #', num2str(dg), ':']);
+%     disp(rhoTildeVal);
+%     disp(['rho Values for DG #', num2str(dg), ':']);
+%     disp(rhoVal);
+%     disp(['L Values (Local Controller Gains) for DG #', num2str(dg), ':']);
+%     disp(LVal);
+% 
+%     disp('-------------------------------');
+% end
+% Local.LocalControllerforDG(numDGs, A_DG, B_DG);
+Results for lines
+% % Extract and display results
+% PBarValues = cell(1, numLines);
+% nuBarValues = cell(1, numLines);
+% rhoBarValues = cell(1, numLines);
+% 
+% for line = 1:numLines
+%     PBarVal = value(PBar{line});
+%     nuBarVal = value(nuBar{line});
+%     rhoBarVal = value(rhoBar{line});
+% 
+%     % Display results for each line
+%     disp(['PBar Values for Line #', num2str(line), ':']);
+%     disp(PBarVal);
+%     disp(['nuBar Values for Line #', num2str(line), ':']);
+%     disp(nuBarVal);
+%     disp(['rhoBar Values for Line #', num2str(line), ':']);
+%     disp(rhoBarVal);
+%     disp('-------------------------------');
+% end
