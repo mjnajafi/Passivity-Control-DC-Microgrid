@@ -46,4 +46,5 @@ function [PVal, KVal, LVal, nuVal, rhoVal, status] = ComputePassivityForDGs(DG)
     LVal = KVal / PVal;
     nuVal = value(nu);
     rhoVal = 1 / value(rhoTilde);
-   end
+
+end
