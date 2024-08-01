@@ -59,8 +59,20 @@ end
 
 %% Combine constraints over all Lines (66a-Part2, 66c)
 for l = 1:1:numOfLines
+
+    % Constraint (66a-Part2)
+    con5 = P_l{l} >= 0;
     
-    constraints = [constraints, newConstraints]
+
+    % Constraint (66c)
+    Z = [(2*P_l{l}*line.R{l})/line.L{l} - rho_l{l}, -P_l{l}/line.L{l} + 1/2;
+         -P_l{l}/line.L{l} + 1/2, -nu_l{l}];
+
+    con6 = Z >= 0;
+     
+    % Collecting Constraints
+    constraints = [constraints, con5];
+    constraints = [constraints, con6]; 
 end
 
 
@@ -75,10 +87,15 @@ end
 
 
 %% Solve the LMI problem (66)
+
+% Defining costfunction
 costFunction = 0;
-sol = optimize(constraints, solverOptions);
 
+solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0);
 
+sol = optimize(constraints, costFunction, solverOptions);
+
+status = sol.problem == 0;
 
 
 %% Extractt variable values
