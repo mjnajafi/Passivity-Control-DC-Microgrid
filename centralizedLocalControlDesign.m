@@ -1,18 +1,21 @@
-function [DG,Line] = centralizedLocalControlDesign(DG,Line,topologyMetrics)
+function [DG,Line] = centralizedLocalControlDesign(DG,Line,B_il)
 
 %% Create LMI variables necessary for (66)
-% Variables corresponding to DGs like P_i, nu_i, \gammaTilde_i ...
+% Variables corresponding to DGs like P_i, K_i, nu_i, rhoTilde_i, gammaTilde_i
 for i = 1:1:numOfDGs
-    P_i{i} = sdpvar();
-    ...
+    P_i{i} = sdpvar(3, 3, 'symmetric');
+    K_i{i} = sdpvar(1, 3, 'full');
+    nu_i{i} = sdpvar(1, 1, 'full');
+    rhoTilde_i{i} = sdpvar(1, 1, 'full'); % Representing: 1/rho
+    gammaTilde_i{i} = sdpvar(1,1,'full');
 end
 
-% Variables corresponding to Lines like P_l, nu_l, ...
+% Variables corresponding to Lines like P_l, nu_l, rho_l
 for l = 1:1:numOfLines
-    P_l{l} = sdpvar();
-    ...
+    P_l{l} = sdpvar(1, 1, 'symmetric');
+    nu_l{l} = sdpvar(1, 1, 'full');
+    rho_l{l} = sdpvar(1, 1, 'full'); 
 end
-
 
 constraints = [];
 %% Combine constraints over all DGs (66a-Part1, 66b,66d,66e)
@@ -31,7 +34,7 @@ end
 
 %% Combine all mixed constraints (66f, 66g)
 for i = 1:1:numOfDGs
-    for l = 1:1:numberOfLines
+    for l = 1:1:numbOfLines
         % Add a constraint only if l in neighborhood of i
         constraints = [constraints, newConstraints]
     end
