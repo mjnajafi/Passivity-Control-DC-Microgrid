@@ -1,8 +1,8 @@
 function [PVal, KVal, LVal, nuVal, rhoVal, status] = ComputePassivityForDGs(DG)
     
     
-    A_DG = DG.A;
-    B_DG = DG.B;
+    Ai = DG.A;
+    Bi = DG.B;
 
 
     solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0);
@@ -17,27 +17,33 @@ function [PVal, KVal, LVal, nuVal, rhoVal, status] = ComputePassivityForDGs(DG)
     % Equation (66b)
     DMat = rhoTilde * eye(3);
     MMat = [P, zeros(3)];
-    ThetaMat = [-A_DG*P - P'*A_DG' - B_DG*K - K'*B_DG', -eye(3) + 0.5*P; -eye(3) + 0.5*P, -nu*eye(3)];
+    ThetaMat = [-Ai*P - P'*Ai' - Bi*K - K'*Bi', -eye(3) + 0.5*P; -eye(3) + 0.5*P, -nu*eye(3)];
     W = [DMat, MMat; MMat', ThetaMat];
 
 
     % Defined Constraints 
     con2 = W >= 0;
 
-    con3_1 = -100 <= nu 
-    con3_2 = nu <= 100;
-    con4 = -100 <= rhoTilde & rhoTilde <= 100;
+
+    % Defining the boundaries
+    nu_bound = 100;
+    rhoTilde_bound = 100;
+
+    con3_1 = -nu_bound <= nu;
+    con3_2 = nu <= nu_bound;
+    con4_1 = -rhoTilde_bound <= rhoTilde;
+    con4_2 =  rhoTilde <= rhoTilde_bound;
 
     % Total Constraints
-    constraints = [con1, con2, con3, con4];
-
-    % CostFunction - I do not know which cost function should be used!!!
+    constraints = [con1, con2, con3_1, con3_2, con4_1, con4_2];
 
     % costFunction = 0.0000001*(-nu + rhoTilde);
     costFunction = 1*(nu - rhoTilde);
 
     % Solution
     sol = optimize(constraints, costFunction, solverOptions);
+
+    % If the LMI problem is feasible then the status is 1, otherwise 0.
     status = sol.problem == 0;
 
     % Extract optimal values
