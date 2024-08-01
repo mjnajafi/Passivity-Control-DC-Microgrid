@@ -1,8 +1,8 @@
-function [coords, adjMatrix, B_il] = generateMicrogridTopology(numberOfDGs, threshold)
+function [coords, adjMatrix, B_il] = generateMicrogridTopology(numOfDGs, threshold)
     % Generate random points and visualize the microgrid topology.
     %
     % Inputs:
-    %   numberOfDGs - Number of Distributed Generators (DGs).
+    %   numOfDGs - Number of Distributed Generators (DGs).
     %   threshold - Distance threshold to determine if DGs are connected.
     %
     % Outputs:
@@ -11,18 +11,18 @@ function [coords, adjMatrix, B_il] = generateMicrogridTopology(numberOfDGs, thre
     %   B_il - Matrix representing connections between DGs and lines.
 
     % Step 1: Generate random points for DGs
-    coords = rand(numberOfDGs, 2); % Generate random coordinates in [0, 1]^2
+    coords = rand(numOfDGs, 2); % Generate random coordinates in [0, 1]^2
 
     % Step 2: Initialize adjacency matrix
-    adjMatrix = zeros(numberOfDGs, numberOfDGs);
+    adjMatrix = zeros(numOfDGs, numOfDGs);
 
     % Create a list to store lines (edges) and their connections
     lines = [];
     lineIndex = 1;
 
     % Determine connections based on distance threshold
-    for i = 1:numberOfDGs
-        for j = i+1:numberOfDGs
+    for i = 1:numOfDGs
+        for j = i+1:numOfDGs
             distance = norm(coords(i,:) - coords(j,:));
             if distance < threshold
                 % Create a line connecting DG i and DG j
@@ -37,7 +37,7 @@ function [coords, adjMatrix, B_il] = generateMicrogridTopology(numberOfDGs, thre
     % Step 3: Generate B_il matrix
     % Number of lines
     numberOfLines = size(lines, 1);
-    B_il = zeros(numberOfDGs, numberOfLines);
+    B_il = zeros(numOfDGs, numberOfLines);
 
     % Fill the B_il matrix
     for k = 1:numberOfLines
@@ -55,7 +55,7 @@ function [coords, adjMatrix, B_il] = generateMicrogridTopology(numberOfDGs, thre
     scatter(coords(:,1), coords(:,2), 100, 'filled', 'b');
 
     % Annotate nodes
-    for i = 1:numberOfDGs
+    for i = 1:numOfDGs
         text(coords(i,1), coords(i,2), num2str(i), 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right');
     end
 
