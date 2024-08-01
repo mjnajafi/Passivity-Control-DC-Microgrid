@@ -16,26 +16,32 @@ function [PBarVal, nuBarVal, rhoBarVal, status] = ComputePassivityForLines(Line)
             -PBar/Ll+1/2, -nuBar];
 
 
-    % Defined Constraints 
+    % Defining the boundaries
     con2 = W >= 0;
 
-    con3 = -100 <= nuBar & nuBar <= 100;
-    con4 = -100 <= rhoBar & rhoBar <= 100;
+    nu_bound = 100;
+    rhoTilde_bound = 100;
+
+    con3_1 = -nu_bound <= nuBar; 
+    con3_2 = nuBar <= nu_bound;
+    con4_1 = -rhoTilde_bound <= rhoBar; 
+    con4_2 = rhoBar <= rhoTilde_bound;
 
     % Total Constraints
-    constraints = [con1, con2, con3, con4];
+    constraints = [con1, con2, con3_1, con3_2, con4_1, con4_2];
 
-    % CostFunction - I do not know which cost function should be used!!!
-
+   
     % costFunction = 0.0000001*(-nu + rhoTilde);
     costFunction = 1*(nuBar - rhoBar);
 
     % Solution
     sol = optimize(constraints, costFunction, solverOptions);
+
+    % If the LMI problem is feasible then the status is 1, otherwise 0.
     status = sol.problem == 0;
 
     % Extract optimal values
     PBarVal = value(PBar);
     nuBarVal = value(nuBar);
     rhoBarVal = value(rhoBar);
-   end
+end
