@@ -6,7 +6,7 @@ function [PBarVal, nuBarVal, rhoBarVal, status] = ComputePassivityForLines(Line)
     solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0);
     PBar = sdpvar(1, 1, 'symmetric');
     nuBar = sdpvar(1, 1, 'full');
-    rhoBar = sdpvar(1, 1, 'full'); % Representing: 1/rho
+    rhoBar = sdpvar(1, 1, 'full'); 
     
     % Equation (66a)
     con1 = PBar >= 0;
