@@ -85,12 +85,13 @@ for i = 1:1:numOfDGs
         con7_2 = rho_l{l} >= (rhoTilde_i{i})/(p_i*p_l)*((p_i*B_il(i,l)^2)/(2*DG.C{i})-((p_l*B_il(i,l)^2)/2))^2;
 
         % Constraint (66g)
-        
+        con8 = nu_l{l} >= m_k*rhoTilde_i{i}+c_k;
         
 
         % Collecting Constraints
         constraints = [constraints, con7_1];
         constraints = [constraints, con7_2]; 
+        constraints = [constraints, con8];
 
     end
 end
@@ -111,19 +112,29 @@ status = sol.problem == 0;
 
 %% Extractt variable values
 for i = 1:1:numOfDGs
-    P_iVal = value(P_i{i})
-    nu_iVal = value(nu_i{i})
+    P_iVal = value(P_i{i});
+    K_iVal = value(K_i{i});
+    nu_iVal = value(nu_i{i});
+    rhoTilde_iVal = value(rhoTilde_i{i});
+    gammaTilde_iVal = value(gammaTilde_i{i});
 
     % update DG
+    DG{i}.P = P_iVal;
+    DG{i}.K = K_iVal;
     DG{i}.nu = nu_iVal;
+    DG{i}.rhoTilde = rhoTilde_iVal;
+    DG{i}.gammaTilde = gammaTilde_iVal;
 end
 
 for l = 1:1:numOfLine
-    P_lVal = value(P_l{l})
-    nu_lVal = value(nu_l{l})
+    P_lVal = value(P_l{l});
+    nu_lVal = value(nu_l{l});
+    rho_lVal = value(rho_l{l});
 
-    % update DG
+    % update Line
+    Line{l}.P = P_lVal;
     Line{l}.nu = nu_lVal;
+    Line{l}.rho = rho_lVal;
 end
 
 
