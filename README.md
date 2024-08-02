@@ -1,4 +1,4 @@
-Distributed Dissipativity-Based Controller and Topology Co-Design for DC Microgrids
+Paper Title: "Distributed Dissipativity-Based Controller and Topology Co-Design for DC Microgrids"
 
 This repository contains the simulation files associated with the paper:
 
