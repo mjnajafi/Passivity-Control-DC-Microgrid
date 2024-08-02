@@ -34,26 +34,27 @@ for i = 1:1:numOfDGs
     con2 = W >= 0;
     
     % Constraint (66d)
-    p_i = 1;    % predefined value
+    p_i{i} = 1/numOfDGs;    % predefined value
     
-    con3_1 = -gammaTilde_i{i}/p_i <= nu_i{i};
+    con3_1 = -gammaTilde_i{i}/p_i{i} <= nu_i{i};
     con3_2 = nu_i{i} <= 0;
     
 
     % Constraint (66e)
     con4_1 = 0 <= rhoTilde_i{i};
 
-    con4_21 = rhoTilde_i{i} <= p_i;
-    con4_22 = rhoTilde_i{i} <= 4*gammaTilde_i{i}/p_i;
+    con4_21 = rhoTilde_i{i} <= p_i{i};
+    con4_22 = rhoTilde_i{i} <= 4*gammaTilde_i{i}/p_i{i};
     
     % Collecting Constraints
-    constraints = [constraints, con1];
-    constraints = [constraints, con2];
-    constraints = [constraints, con3_1];
-    constraints = [constraints, con3_2];
-    constraints = [constraints, con4_1];
-    constraints = [constraints, con4_21];
-    constraints = [constraints, con4_22];
+     constraints = [constraints, [con1, con2, con3_1, con3_2, con4_1, con4_21, con4_22]];
+    % constraints = [constraints, con1];
+    % constraints = [constraints, con2];
+    % constraints = [constraints, con3_1];
+    % constraints = [constraints, con3_2];
+    % constraints = [constraints, con4_1];
+    % constraints = [constraints, con4_21];
+    % constraints = [constraints, con4_22];
 end
 
 
@@ -63,6 +64,7 @@ for l = 1:1:numOfLines
     % Constraint (66a-Part2)
     con5 = P_l{l} >= 0;
     
+    p_l{l} = 1/numOfLines;
 
     % Constraint (66c)
     Z = [(2*P_l{l}*line.R{l})/line.L{l} - rho_l{l}, -P_l{l}/line.L{l} + 1/2;
@@ -80,34 +82,48 @@ end
 for i = 1:1:numOfDGs
     for l = 1:1:numbOfLines
 
-        % Constraint (66f)
-        con7_1 = rho_l{l} >= -(p_i*nu_i{i}*B_il(i,l))/(p_l*DG.C{i}^2);
-        con7_2 = rho_l{l} >= (rhoTilde_i{i})/(p_i*p_l)*((p_i*B_il(i,l)^2)/(2*DG.C{i})-((p_l*B_il(i,l)^2)/2))^2;
-
-        % Constraint (66g)
-        
- 
-        epsilon = 0.001;
-        n = 10;
-        rho_min = epsilon;
-        rho_max = min(p_i, 4*gammaTilde_i{i}/p_i);
-        delta_i = (rho_max - rho_min) / n;
-
-        
-        % Loop to compute m_k and c_k
-        for k = 1:n
-
-        end
+        if B_il(i,l) ~= 0
 
        
-        
-        % Define Constraint (66g)
-        con8 = nu_l{l} >= m_k*rhoTilde_i{i}+c_k;
+    
+            % Constraint (66f)
+            con7_1 = rho_l{l} >= -(p_i{i}*nu_i{i})/(p_l{l}*DG.C{i}^2);
+            con7_2 = rho_l{l} >= (rhoTilde_i{i})/(p_i{i}*p_l{l})*((p_i{i})/(2*DG.C{i})-((p_l{l})/2))^2;
+    
+            
+    
+            % Constraint (66g)
+            
+     
+            epsilon = 0.001;
+            n = 10;
+            rho_min = epsilon;
+            gamma‌Bar = 5;
+            rho_max = min(p_i{i}, 4*gamma‌Bar/p_i{i});
+            delta_i = (rho_max - rho_min) / n;
+            rho_0 = rho_min;
+            
 
-        % Collecting Constraints
-        constraints = [constraints, con7_1];
-        constraints = [constraints, con7_2]; 
-        constraints = [constraints, con8];
+    
+            
+            % Loop to compute m_k and c_k
+            for k = 1:n
+                rho_k = rho_0 + delta_i;
+                m_k = ()
+    
+            end
+    
+           
+            
+            % Define Constraint (66g)
+            con8 = nu_l{l} >= m_k*rhoTilde_i{i}+c_k;
+    
+            % Collecting Constraints
+            constraints = [constraints, con7_1];
+            constraints = [constraints, con7_2];
+            constraints = [constraints, con8];
+
+        end
 
     end
 end
