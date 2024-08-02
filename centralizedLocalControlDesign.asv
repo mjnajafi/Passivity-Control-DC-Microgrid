@@ -80,17 +80,18 @@ end
 for i = 1:1:numOfDGs
     for l = 1:1:numbOfLines
 
-        % Constraint (
+        % Constraint (66f)
         con7_1 = rho_l{l} >= -(p_i*nu_i{i}*B_il(i,l))/(p_l*DG.C{i}^2);
         con7_2 = rho_l{l} >= (rhoTilde_i{i})/(p_i*p_l)*((p_i*B_il(i,l)^2)/(2*DG.C{i})-((p_l*B_il(i,l)^2)/2))^2;
 
-        
+        % Constraint (66g)
+        con8 = nu_l{l} >= m_k*rhoTilde_i{i}+c_k;
         
 
         % Collecting Constraints
         constraints = [constraints, con7_1];
         constraints = [constraints, con7_2]; 
-
+        constraints = [constraints, con8];
 
     end
 end
@@ -111,8 +112,18 @@ status = sol.problem == 0;
 
 %% Extractt variable values
 for i = 1:1:numOfDGs
-    P_iVal = value(P_i{i})
-    nu_iVal = value(nu_i{i})
+    P_iVal = value(P_i{i});
+    K_iVal = value(K_i{i});
+    nu_iVal = value(nu_i{i});
+    rhoTilde_iVal
+    
+
+    P_i{i} = sdpvar(3, 3, 'symmetric');
+    K_i{i} = sdpvar(1, 3, 'full');
+    nu_i{i} = sdpvar(1, 1, 'full');
+    rhoTilde_i{i} = sdpvar(1, 1, 'full'); % Representing: 1/rho
+    gammaTilde_i{i} = sdpvar(1,1,'full');
+
 
     % update DG
     DG{i}.nu = nu_iVal;
