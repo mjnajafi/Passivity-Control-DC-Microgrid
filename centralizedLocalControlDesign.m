@@ -85,8 +85,24 @@ for i = 1:1:numOfDGs
         con7_2 = rho_l{l} >= (rhoTilde_i{i})/(p_i*p_l)*((p_i*B_il(i,l)^2)/(2*DG.C{i})-((p_l*B_il(i,l)^2)/2))^2;
 
         % Constraint (66g)
-        con8 = nu_l{l} >= m_k*rhoTilde_i{i}+c_k;
         
+ 
+        epsilon = 0.001;
+        n = 10;
+        rho_min = epsilon;
+        rho_max = min(p_i, 4*gammaTilde_i{i}/p_i);
+        delta_i = (rho_max - rho_min) / n;
+
+        
+        % Loop to compute m_k and c_k
+        for k = 1:n
+
+        end
+
+       
+        
+        % Define Constraint (66g)
+        con8 = nu_l{l} >= m_k*rhoTilde_i{i}+c_k;
 
         % Collecting Constraints
         constraints = [constraints, con7_1];
