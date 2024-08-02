@@ -79,8 +79,19 @@ end
 %% Combine all mixed constraints (66f, 66g)
 for i = 1:1:numOfDGs
     for l = 1:1:numbOfLines
-        % Add a constraint only if l in neighborhood of i
-        constraints = [constraints, newConstraints]
+
+        % Constraint (
+        con7_1 = rho_l{l} >= -(p_i*nu_i{i}*B_il(i,l))/(p_l*DG.C{i}^2);
+        con7_2 = rho_l{l} >= (rhoTilde_i{i})/(p_i*p_l)*((p_i*B_il(i,l)^2)/(2*DG.C{i})-((p_l*B_il(i,l)^2)/2))^2;
+
+        
+        
+
+        % Collecting Constraints
+        constraints = [constraints, con7_1];
+        constraints = [constraints, con7_2]; 
+
+
     end
 end
 
