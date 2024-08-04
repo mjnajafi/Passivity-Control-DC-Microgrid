@@ -76,6 +76,11 @@ function [coords, adjMatrix, B_il] = generateMicrogridTopology(numOfDGs, thresho
         % Plot rectangle marker at the midpoint
         rectangle('Position', [midX - 0.01, midY - 0.01, 0.02, 0.02], ...
                   'FaceColor', 'r', 'EdgeColor', 'k');
+
+
+        % Annotate the line number
+        text(midX, midY, num2str(k), 'Color', 'k', 'FontWeight', 'bold', ...
+             'VerticalAlignment', 'middle', 'HorizontalAlignment', 'center');
     end
 
     % Set plot properties
