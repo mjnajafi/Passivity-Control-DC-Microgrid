@@ -22,7 +22,8 @@ constraints = [];
 
 for i = 1:1:numOfDGs
 
-    
+    Ai = DG{i}.A;
+    Bi = DG{i}.B;
 
     % Constraint (66a-Part1)
     con1 = P_i{i} >= 0;
@@ -30,7 +31,7 @@ for i = 1:1:numOfDGs
     % Constraint (66b)
     DMat = rhoTilde_i{i} * eye(3);
     MMat = [P_i{i}, zeros(3)];
-    ThetaMat = [-DG.A{i}*P_i{i} - P_i{i}'*DG.A{i}' - DG.B{i}*K_i{i} - K_i{i}'*DG.B{i}', -eye(3) + 0.5*P_i{i};
+    ThetaMat = [-Ai*P_i{i} - P_i{i}'*Ai' - Bi*K_i{i} - K_i{i}'*Bi', -eye(3) + 0.5*P_i{i};
                 -eye(3) + 0.5*P_i{i}, -nu_i{i}*eye(3)];
     W = [DMat, MMat; MMat', ThetaMat];
     
@@ -50,19 +51,15 @@ for i = 1:1:numOfDGs
     con4_22 = rhoTilde_i{i} <= 4*gammaTilde_i{i}/p_i{i};
     
     % Collecting Constraints
-    constraints = [constraints, [con1, con2, con3_1, con3_2, con4_1, con4_21, con4_22]];
-    % constraints = [constraints, con1];
-    % constraints = [constraints, con2];
-    % constraints = [constraints, con3_1];
-    % constraints = [constraints, con3_2];
-    % constraints = [constraints, con4_1];
-    % constraints = [constraints, con4_21];
-    % constraints = [constraints, con4_22];
-end
+    constraints = [constraints, con1, con2, con3_1, con3_2, con4_1, con4_21, con4_22];
+ end
 
 
 %% Combine constraints over all Lines (66a-Part2, 66c)
 for l = 1:1:numOfLines
+
+    Rl = Line{l}.R;
+    Ll = Line{l}.L;
     
 
     % Constraint (66a-Part2)
@@ -71,33 +68,33 @@ for l = 1:1:numOfLines
     p_l{l} = 1/numOfLines;
 
     % Constraint (66c)
-    Z = [(2*P_l{l}*line.R{l})/line.L{l} - rho_l{l}, -P_l{l}/line.L{l} + 1/2;
-         -P_l{l}/line.L{l} + 1/2, -nu_l{l}];
+    Z = [(2*P_l{l}*Rl)/Ll - rho_l{l}, -P_l{l}/Ll + 1/2;
+         -P_l{l}/Ll + 1/2, -nu_l{l}];
 
     con6 = Z >= 0;
      
     % Collecting Constraints
-    constraints = [constraints, [con5, con6]];
-    % constraints = [constraints, con5];
-    % constraints = [constraints, con6]; 
+    constraints = [constraints, con5, con6];
 end
 
 
 %% Combine all mixed constraints (66f, 66g)
 for i = 1:1:numOfDGs
-    for l = 1:1:numbOfLines
+    for l = 1:1:numOfLines
+
+        Ct = DG{i}.C;
 
         if B_il(i,l) ~= 0
        
            % Constraint (66f)
-           con7_1 = rho_l{l} >= -(p_i{i}*nu_i{i})/(p_l{l}*DG.C{i}^2);
-           con7_2 = rho_l{l} >= (rhoTilde_i{i})/(p_i{i}*p_l{l})*((p_i{i})/(2*DG.C{i})-((p_l{l})/2))^2;
-    
+           con7_1 = rho_l{l} >= (p_i{i}*nu_i{i})/(p_l{l}*Ct^2);
+           con7_2 = rho_l{l} >= (rhoTilde_i{i})/(p_i{i}*p_l{l})*((p_i{i})/(2*Ct)-((p_l{l})/2))^2;
+           con7_3 = rho_l{l} >= 0;    
                 
            % Constraint (66g)
-           epsilon = 0.001;
-           n = 10;
-           BarGamma = 5;
+           epsilon = 0.001; % Minimum value
+           n = 10;          % Number of intervals
+           BarGamma = 5;   % Fixed value for gammaBar
            rho_min = epsilon;
            rho_max = min(p_i{i}, 4*BarGamma/p_i{i});
            delta_i = (rho_max - rho_min) / n;
@@ -135,11 +132,8 @@ for i = 1:1:numOfDGs
                con8{k} = nu_l{l} >= m_k * rhoTilde_i{i} + c_k;
            end
 
-               % Define the final constraint
-               min_constraint = min(cell2mat(con8)); % Combine all constraints using min
-
                % Collecting Constraints
-               constraint = [constraint, [con7_1, con7_2, min_constraint]];                 
+               constraints = [constraints, con7_1, con7_2, con7_3, con8{k}];                 
         end
     end
 end
@@ -158,7 +152,7 @@ sol = optimize(constraints, costFunction, solverOptions);
 status = sol.problem == 0;
 
 
-%% Extractt variable values
+%% Extract variable values
 for i = 1:1:numOfDGs
     P_iVal = value(P_i{i});
     K_iVal = value(K_i{i});
@@ -174,7 +168,7 @@ for i = 1:1:numOfDGs
     DG{i}.gammaTilde = gammaTilde_iVal;
 end
 
-for l = 1:1:numOfLine
+for l = 1:1:numOfLines
     P_lVal = value(P_l{l});
     nu_lVal = value(nu_l{l});
     rho_lVal = value(rho_l{l});
@@ -182,7 +176,7 @@ for l = 1:1:numOfLine
     % update Line
     Line{l}.P = P_lVal;
     Line{l}.nu = nu_lVal;
-    Line{l}.rho = rho_lVal;
+    Line{l}.rhoBar = rho_lVal;
 end
 
 
