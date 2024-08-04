@@ -36,11 +36,11 @@ function [coords, adjMatrix, B_il] = generateMicrogridTopology(numOfDGs, thresho
 
     % Step 3: Generate B_il matrix
     % Number of lines
-    numberOfLines = size(lines, 1);
-    B_il = zeros(numOfDGs, numberOfLines);
+    numOfLines = size(lines, 1);
+    B_il = zeros(numOfDGs, numOfLines);
 
     % Fill the B_il matrix
-    for l = 1:numberOfLines
+    for l = 1:numOfLines
         i = lines(l, 1);
         j = lines(l, 2);
         B_il(i, l) = 1; % DG i is an in-neighbor of line k
@@ -60,7 +60,7 @@ function [coords, adjMatrix, B_il] = generateMicrogridTopology(numOfDGs, thresho
     end
 
     % Plot lines with rectangle markers
-    for k = 1:numberOfLines
+    for k = 1:numOfLines
         i = lines(k, 1);
         l = lines(k, 2);
         % Coordinates of the line
