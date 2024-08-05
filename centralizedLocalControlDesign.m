@@ -145,7 +145,7 @@ end
 % Defining costfunction
 costFunction = 0;
 
-solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0);
+solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1);
 
 sol = optimize(constraints, costFunction, solverOptions);
 
