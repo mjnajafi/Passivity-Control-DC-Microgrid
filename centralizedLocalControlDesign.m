@@ -7,7 +7,7 @@ for i = 1:1:numOfDGs
     K_i{i} = sdpvar(1, 3, 'full');
     nu_i{i} = sdpvar(1, 1, 'full');
     rhoTilde_i{i} = sdpvar(1, 1, 'full'); % Representing: 1/rho
-    gammaTilde_i{i} = sdpvar(1,1,'full');
+    gammaTilde_i{i} = sdpvar(1, 1,'full');
 end
 
 % Variables corresponding to Lines like P_l, nu_l, rho_l
