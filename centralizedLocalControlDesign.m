@@ -94,7 +94,7 @@ for i = 1:1:numOfDGs
            % Constraint (66g)
            epsilon = 0.001; % Minimum value
            n = 10;          % Number of intervals
-           BarGamma = 5;   % Fixed value for gammaBar
+           BarGamma = 5;    % Fixed value for gammaBar
            rho_min = epsilon;
            rho_max = min(p_i{i}, 4*BarGamma/p_i{i});
            delta_i = (rho_max - rho_min) / n;
