@@ -204,6 +204,8 @@ else
     costFun = 1*costFun0 + 1*gammaTilde; % hard (same as soft) %%% Play with this
 end
 
+
+
 %% Solve the LMI problem (47)
 
 solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1);
@@ -219,18 +221,9 @@ QVal = value(Q);
 X_p_11Val = value(X_p_11);
 KVal = X_p_11Val \ QVal;
 
-% Load KVal elements into a cell structure K{i,j} (i.e., partitioning KVal
-% into N\times N blocks)
-
-
-
-% Filter the K_ij values (weed out the ones with the smallest magnitudes)
-
-
-% Load the K_ij values to the DGs
 for i = 1:1:numOfDGs
     for j = 1:1:numOfDGs
-        DG{i}.K{j} = K{i,j};  
+        DG{i}.
     end
 end
 

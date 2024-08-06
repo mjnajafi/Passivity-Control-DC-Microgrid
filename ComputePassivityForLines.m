@@ -32,7 +32,7 @@ function [PBarVal, nuBarVal, rhoBarVal, status] = ComputePassivityForLines(Line)
 
    
     % costFunction = 0.0000001*(-nu + rhoTilde);
-    costFunction = 1*(nuBar - rhoBar);
+    costFunction = 1*(-nuBar - rhoBar);
 
     % Solution
     sol = optimize(constraints, costFunction, solverOptions);

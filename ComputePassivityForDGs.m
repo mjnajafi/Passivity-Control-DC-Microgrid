@@ -38,7 +38,7 @@ function [PVal, KVal, LVal, nuVal, rhoVal, status] = ComputePassivityForDGs(DG)
     constraints = [con1, con2, con3_1, con3_2, con4_1, con4_2];
 
     % costFunction = 0.0000001*(-nu + rhoTilde);
-    costFunction = 1*(nu - rhoTilde);
+    costFunction = 1*(-nu + rhoTilde);
 
     % Solution
     sol = optimize(constraints, costFunction, solverOptions);

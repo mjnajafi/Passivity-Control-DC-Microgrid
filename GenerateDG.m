@@ -1,4 +1,4 @@
-function DG = GenerateDG(R0,L0,C0,RL0)
+function DG = GenerateDG(R0,L0,C0,RL0,coords_i)
 
     % Generating
     Ri = R0 + 0.01*rand();
@@ -20,5 +20,6 @@ function DG = GenerateDG(R0,L0,C0,RL0)
     DG.Y = Yi;
     DG.A = Ai;
     DG.B = Bi;
+    DG.coordinates = coords_i;
 end
 
