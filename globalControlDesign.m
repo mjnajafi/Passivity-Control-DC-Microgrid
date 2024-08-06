@@ -21,15 +21,14 @@ BarC = zeros(numOfDGs * 3, numOfLines);
 
 for l = 1:numOfLines
     for i = 1:numOfDGs
-        
         Ct = DG{i}.C;
-        
-        BarC((i-1)*3 + 1, l) = -B_il(i, l) / Ct;
+        BarC((i-1)*3 + 1, l) = -B_il(i, l)/Ct;
     end
 end
 
 
 % Create H Matrix
+%%%% Comment: Dimentions of H are not correct, check Eq. (40) in the paper
 H = zeros(numOfDGs * 3, numOfDGs * 3);
 
 for i = 1:numOfDGs
@@ -81,12 +80,18 @@ O_bar = zeros(numOfDGs);
 O = zeros([3*numOfDGs numOfDGs]);
 
 for i = 1:1:numOfDGs
+    %%%% Comment: Dimentions of P is not correct, check Eq. (46b) in the
+    %%%% paper. Also, use lower-case p_i{i} as they are scalars
     P_i{i} = sdpvar(numOfDGs, numOfDGs, 'diagonal');
+    %%%% Comment: Dimentions of Q is not correct, check below Eq. (46) in the
+    %%%% paper. Also, use Q_ij{i,j} cell structure
     Q_i{i} = sdpvar(3*numOfDGs, 3*numOfDGs, 'full'); 
     GammaTilde_i{i} = sdpvar(1, 1,'full');
 end
 
 for l = 1:1:numOfLines
+    %%%% Comment: Dimentions of BarP is not correct, check Eq. (46c) in the
+    %%%% paper. Also, use lower-case Barp_l{l} as they are scalars
     BarP_l{l} = sdpvar(numOfLines, numOfLines, 'diagonal');
 end
 
@@ -102,10 +107,17 @@ BarX_Barp_22 = [];
 for i = 1:numOfDGs
           
         nu_i = DG{i}.nu;
+        %%%% Comment: Souldn't we use just rho_i ? (not rhoTilde_i)
         rhoTilde_i = DG{i}.rhoTilde;
+
+        %%%% Comment: Quantities related to lines should be defined in a
+        %%%% seperate loop dedicated for lines, like for l = 1:1:numOfLines
+        %%%% Comment: you mean nuBar_l ? (use a consistent notation/variablenames)
         nu_l = Line{l}.nu;
+        %%%% Comment: you mean rhoBar_l ? (use a consistent notation/variablenames)
         rhoBar_i = Line{l}.rhoBar;
        
+        
         X_p_11 = blkdiag(X_p_11, -nu_i * P_i{i}(i, i) * I_n);
         BarX_Barp_11 = blkdiag(BarX_Barp_11, -nu_l * BarP_l{l}(l, l) * I_bar);
         X_p_12 = blkdiag(X_p_12, 0.5 * P_i{i}(i, i) * I_n);
