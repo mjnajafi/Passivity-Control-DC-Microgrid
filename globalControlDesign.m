@@ -29,7 +29,7 @@ end
 
 % Create H Matrix
 %%%% Comment: Dimentions of H are not correct, check Eq. (40) in the paper
-H = zeros(numOfDGs * 3, numOfDGs * 3);
+H = zeros(numOfDGs, numOfDGs * 3);
 
 for i = 1:numOfDGs
     H((i-1)*3 + 3, (i-1)*3 + 3) = 1;
@@ -79,20 +79,26 @@ O_n = zeros(3 * numOfDGs);
 O_bar = zeros(numOfDGs);
 O = zeros([3*numOfDGs numOfDGs]);
 
-for i = 1:1:numOfDGs
-    %%%% Comment: Dimentions of P is not correct, check Eq. (46b) in the
-    %%%% paper. Also, use lower-case p_i{i} as they are scalars
-    P_i{i} = sdpvar(numOfDGs, numOfDGs, 'diagonal');
-    %%%% Comment: Dimentions of Q is not correct, check below Eq. (46) in the
-    %%%% paper. Also, use Q_ij{i,j} cell structure
-    Q_i{i} = sdpvar(3*numOfDGs, 3*numOfDGs, 'full'); 
-    GammaTilde_i{i} = sdpvar(1, 1,'full');
+% Initialize cell array
+p_i = cell(numOfDGs, 1);
+Q_ij = cell(numOfDGs, numOfDGs);
+
+for i = 1:numOfDGs
+    for j = 1:numOfDGs
+        %%%% Comment: Dimentions of P is not correct, check Eq. (46b) in the
+        %%%% paper. Also, use lower-case p_i{i} as they are scalars
+        p_i{i} = sdpvar(1, 1, 'full');
+        %%%% Comment: Dimentions of Q is not correct, check below Eq. (46) in the
+        %%%% paper. Also, use Q_ij{i,j} cell structure
+        Q_ij{i,j} = sdpvar(3*numOfDGs, 3*numOfDGs, 'full'); 
+        GammaTilde_i{i} = sdpvar(1, 1,'full');
+    end
 end
 
 for l = 1:1:numOfLines
     %%%% Comment: Dimentions of BarP is not correct, check Eq. (46c) in the
     %%%% paper. Also, use lower-case Barp_l{l} as they are scalars
-    BarP_l{l} = sdpvar(numOfLines, numOfLines, 'diagonal');
+    Barp_l{l} = sdpvar(1, 1,'full');
 end
 
 X_p_11 = [];
@@ -104,35 +110,32 @@ BarX_12 = [];
 X_p_22 = [];
 BarX_Barp_22 = [];
 
-for i = 1:numOfDGs
+for i = 1:1:numOfDGs
           
         nu_i = DG{i}.nu;
-        %%%% Comment: Souldn't we use just rho_i ? (not rhoTilde_i)
-        rhoTilde_i = DG{i}.rhoTilde;
-
-        %%%% Comment: Quantities related to lines should be defined in a
-        %%%% seperate loop dedicated for lines, like for l = 1:1:numOfLines
-        %%%% Comment: you mean nuBar_l ? (use a consistent notation/variablenames)
-        nu_l = Line{l}.nu;
-        %%%% Comment: you mean rhoBar_l ? (use a consistent notation/variablenames)
-        rhoBar_i = Line{l}.rhoBar;
-       
+        rho_i = DG{i}.rho;
         
-        X_p_11 = blkdiag(X_p_11, -nu_i * P_i{i}(i, i) * I_n);
-        BarX_Barp_11 = blkdiag(BarX_Barp_11, -nu_l * BarP_l{l}(l, l) * I_bar);
-        X_p_12 = blkdiag(X_p_12, 0.5 * P_i{i}(i, i) * I_n);
-        BarX_p_12 = blkdiag(BarX_p_12, 0.5 * BarP_l{l}(l, l) * I_bar);
+        X_p_11 = blkdiag(X_p_11, -nu_i * p_i{i} * I_n);
+        X_p_12 = blkdiag(X_p_12, 0.5 * p_i{i} * I_n);
         X_12 = blkdiag(X_12, (-1 / (2 * nu_i)) * I_n);
-        BarX_12 = blkdiag(BarX_12, (-0.5 * nu_l) * I_bar);
-        X_p_22 = blkdiag(X_p_22, -rhoTilde_i * P_i{i}(i, i) * I_n);
-        BarX_Barp_22 = blkdiag(BarX_Barp_22, -rhoBar_i * BarP_l{l}(l, l) * I_bar);
-   
+        X_p_22 = blkdiag(X_p_22, -rho_i * p_i{i} * I_n);
+        X_p_21 = X_p_12';
+        X_21 = X_12';
 end
 
-X_p_21 = X_p_12';
-BarX_p_21 = BarX_p_12';
-X_21 = X_12';
-BarX_21 = BarX_12';
+
+for l = 1:1:numOfLines
+    
+    nuBar_l = Line{l}.nu;
+    rhoBar_l = Line{l}.rhoBar;
+
+    BarX_Barp_11 = blkdiag(BarX_Barp_11, -nuBar_l * Barp_l{l} * I_bar);
+    BarX_p_12 = blkdiag(BarX_p_12, 0.5 * Barp_l{l} * I_bar);
+    BarX_12 = blkdiag(BarX_12, (-0.5 * nuBar_l) * I_bar);
+    BarX_Barp_22 = blkdiag(BarX_Barp_22, -rhoBar_l * Barp_l{l} * I_bar);
+    BarX_p_21 = BarX_p_12';
+    BarX_21 = BarX_12';
+end
 
 constraints = [];
 %% Constraints 
@@ -141,20 +144,20 @@ for i = 1:numOfDGs
     for l = 1:numOfLines
 
         % Objective Function
-        costFun0 = sum(sum(Q_i{i} .* costMatBlock));
+        costFun0 = sum(sum(Q_ij{i,j} .* costMatBlock));
         
         % Minimum Budget Constraints
         con0 = costFun0 >= 0;
         
         % Basic Constraints
-        con1 = P_i{i} >= 0;
-        con2 = BarP_l{l} >= 0;
+        con1 = p_i{i} >= 0;
+        con2 = Barp_l{l} >= 0;
         
         % Constraints related to the LMI problem
-        T = [X_p_11, O, O_n, Q_i{i}, X_p_11 * BarC, X_p_11;
+        T = [X_p_11, O, O_n, Q_ij{i,j}, X_p_11 * BarC, X_p_11;
                 O', BarX_Barp_11, O', BarX_Barp_11 * C, O_bar, O';
                 O_n, O, I, H, O, O_n;
-                Q_i{i}', C' * BarX_Barp_11, H', -Q_i{i}' * X_12 - X_21 * Q_i{i} - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11 * BarX_12, -X_21 * X_p_11;
+                Q_ij{i,j}', C' * BarX_Barp_11, H', -Q_ij{i,j}' * X_12 - X_21 * Q_ij{i,j} - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11 * BarX_12, -X_21 * X_p_11;
                 BarC' * X_p_11, O_bar, O', -BarC' * X_p_11 * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22, O';
                 X_p_11, O, O_n, -X_p_11 * X_12, O, GammaTilde_i{i} * I];
         
@@ -162,7 +165,7 @@ for i = 1:numOfDGs
         con3 = T  >= 0;
                      
         % Structural constraints
-        con4 = Q_i{i} .* (nullMatBlock == 1) == zeros(12,12);  % Structural limitations (due to the format of the control law)
+        con4 = Q_ij{i,j} .* (nullMatBlock == 1) == zeros(12,12);  % Structural limitations (due to the format of the control law)
                      
         % Collecting Constraints
         constraints = [con0, con1, con2, con3, con4];
@@ -183,13 +186,13 @@ statusGlobalController = sol.problem == 0;
 
 %% Extract variable values
 for i = 1:1:numOfDGs
-    PVal = value(P_i{i});
-    QVal = value(Q_i{i});
+    PVal = value(p_i{i});
+    QVal = value(Q_ij{i,j});
     X_p_11Val = value(X_p_11);
 
     % Calculate K_ij blocks
     K = X_p_11Val \ QVal;
-
+    
     % update DG
     DG{i}.PVal = PVal;
     DG{i}.Kij = K;
