@@ -162,7 +162,7 @@ for i = 1:1:numOfDGs
 
     % update DG
     DG{i}.P = P_iVal;
-    DG{i}.K = K_iVal;
+    DG{i}.Ki0 = K_iVal;
     DG{i}.nu = nu_iVal;
     DG{i}.rhoTilde = rhoTilde_iVal;
     DG{i}.gammaTilde = gammaTilde_iVal;
