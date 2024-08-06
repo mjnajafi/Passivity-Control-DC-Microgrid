@@ -29,7 +29,7 @@ function [coords, adjMatrix, B_il] = generateMicrogridTopology(numOfDGs, thresho
                 lines = [lines; i, j];
                 % Update adjacency matrix
                 adjMatrix(i, j) = 1;
-                adjMatrix(j, i) = -1;
+                adjMatrix(j, i) = 1;
             end
         end
     end

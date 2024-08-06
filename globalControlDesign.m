@@ -1,5 +1,7 @@
-function [DG,Line,statusGlobalController] = globalControlDesign(DG,Line,B_il,numOfDGs,numOfLines)
+function [DG,Line,statusGlobalController] = globalControlDesign(DG,Line,A_ij,B_il,BarGamma,isSoft)
 
+numOfDGs = size(B_il,1);
+numOfLines = size(B_il,2);
 
 %% Creating C , BarC , and H Matrices
 
@@ -32,14 +34,14 @@ end
 H = zeros(numOfDGs, numOfDGs * 3);
 
 for i = 1:numOfDGs
-    H((i-1)*3 + 3, (i-1)*3 + 3) = 1;
+    H(i, (i-1)*3 + 3) = 1;
 end
 
 
 
 %% Creating the adjacency matrix, null matrix, and cost matrix
 
-A = zeros(numOfDGs, numOfDGs);
+A = A_ij; % Adjacency matrix of the DG-DG communication topology
 
 adjMatBlock = cell(numOfDGs, numOfDGs);
 nullMatBlock = cell(numOfDGs, numOfDGs);
@@ -52,151 +54,229 @@ for i = 1:numOfDGs
             if A(j, i) == 1
                 adjMatBlock{i, j} = [0, 0, 0; 1, 1, 1; 0, 0, 0];
                 nullMatBlock{i, j} = [1, 1, 1; 0, 0, 0; 1, 1, 1];
-                costMatBlock{i, j} = 1 * [0, 0, 0; 1, 1, 1; 0, 0, 0];
+                costMatBlock{i, j} = 0.01 * [0, 0, 0; 1, 1, 1; 0, 0, 0]; %%% Play with this
             else
                 adjMatBlock{i, j} = [0, 0, 0; 0, 0, 0; 0, 0, 0];
                 nullMatBlock{i, j} = [1, 1, 1; 0, 0, 0; 1, 1, 1];
-                costMatBlock{i, j} = (20 / numOfDGs) * abs(i - j) * [0, 0, 0; 1, 1, 1; 0, 0, 0];
+                dist_ij = norm(DG{i}.coordinates - DG{j}.coordinates);  % In platoons: (20 / numOfDGs) * abs(i - j) 
+                costMatBlock{i, j} = dist_ij * [0, 0, 0; 1, 1, 1; 0, 0, 0]; %%% Play with this
             end
         else
             adjMatBlock{i, j} = [0, 0, 0; 1, 1, 1; 0, 0, 0];
             nullMatBlock{i, j} = [1, 1, 1; 0, 0, 0; 1, 1, 1];
-            costMatBlock{i, j} = 0 * [0, 0, 0; 1, 1, 1; 0, 0, 0];
+            costMatBlock{i, j} = 0 * [0, 0, 0; 1, 1, 1; 0, 0, 0]; %%% Play with this
         end
     end 
 end
 
-adjMatBlock = cell2mat(adjMatBlock);
-nullMatBlock = cell2mat(nullMatBlock);
-costMatBlock = cell2mat(costMatBlock);
+%%%% Comment: Use the following variable.
+adjMatBlock = cell2mat(adjMatBlock);  %%% This is only for enforcing hard garaph constraints
+nullMatBlock = cell2mat(nullMatBlock); %%% This is needed in any case as it is a structural constraint
+costMatBlock = cell2mat(costMatBlock);   %%% Note that this matrix contains the c_ij information required for the objective function (46a)
 
 
 %% Variables corresponding to DGs like 
-I = eye(3 * numOfDGs);
-I_n = eye(3);
-I_bar = eye(1);
-O_n = zeros(3 * numOfDGs);
-O_bar = zeros(numOfDGs);
-O = zeros([3*numOfDGs numOfDGs]);
 
-% Initialize cell array
-p_i = cell(numOfDGs, 1);
-Q_ij = cell(numOfDGs, numOfDGs);
+I = eye(3*numOfDGs);
+gammaTilde = sdpvar(1, 1,'full');
+GammaTilde = gammaTilde*I;
+
+Q = sdpvar(3*numOfDGs, 3*numOfDGs, 'full'); 
 
 for i = 1:numOfDGs
-    for j = 1:numOfDGs
-        %%%% Comment: Dimentions of P is not correct, check Eq. (46b) in the
-        %%%% paper. Also, use lower-case p_i{i} as they are scalars
-        p_i{i} = sdpvar(1, 1, 'full');
-        %%%% Comment: Dimentions of Q is not correct, check below Eq. (46) in the
-        %%%% paper. Also, use Q_ij{i,j} cell structure
-        Q_ij{i,j} = sdpvar(3*numOfDGs, 3*numOfDGs, 'full'); 
-        GammaTilde_i{i} = sdpvar(1, 1,'full');
-    end
+    p_i{i} = sdpvar(1, 1, 'full');
 end
 
-for l = 1:1:numOfLines
-    %%%% Comment: Dimentions of BarP is not correct, check Eq. (46c) in the
-    %%%% paper. Also, use lower-case Barp_l{l} as they are scalars
-    Barp_l{l} = sdpvar(1, 1,'full');
+for l = 1:numOfLines
+    p_l{l} = sdpvar(1, 1,'full');
 end
+
+
+I_n = eye(3);
 
 X_p_11 = [];
-BarX_Barp_11 = [];
 X_p_12 = [];
-BarX_p_12 = [];
 X_12 = [];
-BarX_12 = [];
 X_p_22 = [];
-BarX_Barp_22 = [];
-
 for i = 1:1:numOfDGs
           
-        nu_i = DG{i}.nu;
-        rho_i = DG{i}.rho;
-        
-        X_p_11 = blkdiag(X_p_11, -nu_i * p_i{i} * I_n);
-        X_p_12 = blkdiag(X_p_12, 0.5 * p_i{i} * I_n);
-        X_12 = blkdiag(X_12, (-1 / (2 * nu_i)) * I_n);
-        X_p_22 = blkdiag(X_p_22, -rho_i * p_i{i} * I_n);
-        X_p_21 = X_p_12';
-        X_21 = X_12';
+    nu_i = DG{i}.nu;
+    rho_i = DG{i}.rho;
+
+    % For DGs, according to equation (33), numOfInouts = numOfOutputs = 3
+    X_i_11 = -nu_i*I_n;    %inputs x inputs
+    X_i_12 = 0.5*I_n;      %inputs x outputs
+    X_i_22 = -rho_i*I_n;   %outputs x outputs
+
+    X_p_11 = blkdiag(X_p_11, p_i{i}*X_i_11);
+    X_p_12 = blkdiag(X_p_12, p_i{i}*X_i_12);
+    X_p_22 = blkdiag(X_p_22, p_i{i}*X_i_22);
+    X_p_21 = X_p_12';
+    
+    X_12 = blkdiag(X_12, (-1 / (2 * nu_i)) * I_n);
+    X_21 = X_12';
+
 end
 
+I_bar = eye(1);
 
+BarX_Barp_11 = [];
+BarX_Barp_12 = [];
+BarX_12 = [];
+BarX_Barp_22 = [];
 for l = 1:1:numOfLines
     
-    nuBar_l = Line{l}.nu;
-    rhoBar_l = Line{l}.rhoBar;
+    nu_l = Line{l}.nu;
+    rho_l = Line{l}.rho;
 
-    BarX_Barp_11 = blkdiag(BarX_Barp_11, -nuBar_l * Barp_l{l} * I_bar);
-    BarX_p_12 = blkdiag(BarX_p_12, 0.5 * Barp_l{l} * I_bar);
-    BarX_12 = blkdiag(BarX_12, (-0.5 * nuBar_l) * I_bar);
-    BarX_Barp_22 = blkdiag(BarX_Barp_22, -rhoBar_l * Barp_l{l} * I_bar);
-    BarX_p_21 = BarX_p_12';
+    % For Lines, according to equation (31), numOfInouts = numOfOutputs = 1
+    BarX_l_11 = -nu_l*I_bar;    %inputs x inputs
+    BarX_l_12 = 0.5*I_bar;      %inputs x outputs
+    BarX_l_22 = -rho_l*I_bar;   %outputs x outputs
+
+    BarX_Barp_11 = blkdiag(BarX_Barp_11, p_l{l}*BarX_l_11);
+    BarX_Barp_12 = blkdiag(BarX_Barp_12, p_l{l}*BarX_l_12);
+    BarX_Barp_22 = blkdiag(BarX_Barp_22, p_l{l}*BarX_l_22);
+    BarX_Barp_21 = BarX_Barp_12';
+
+    BarX_12 = blkdiag(BarX_12, (-1 / (2 * nu_l)) * I_bar);
     BarX_21 = BarX_12';
 end
 
-constraints = [];
+
 %% Constraints 
-% 
+constraints = [];
+
+% Constraints in (46b)
 for i = 1:numOfDGs
-    for l = 1:numOfLines
+    con1 = p_i{i} >= 0;
+    constraints = [constraints, con1];
+end
 
-        % Objective Function
-        costFun0 = sum(sum(Q_ij{i,j} .* costMatBlock));
-        
-        % Minimum Budget Constraints
-        con0 = costFun0 >= 0;
-        
-        % Basic Constraints
-        con1 = p_i{i} >= 0;
-        con2 = Barp_l{l} >= 0;
-        
-        % Constraints related to the LMI problem
-        T = [X_p_11, O, O_n, Q_ij{i,j}, X_p_11 * BarC, X_p_11;
-                O', BarX_Barp_11, O', BarX_Barp_11 * C, O_bar, O';
-                O_n, O, I, H, O, O_n;
-                Q_ij{i,j}', C' * BarX_Barp_11, H', -Q_ij{i,j}' * X_12 - X_21 * Q_ij{i,j} - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11 * BarX_12, -X_21 * X_p_11;
-                BarC' * X_p_11, O_bar, O', -BarC' * X_p_11 * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22, O';
-                X_p_11, O, O_n, -X_p_11 * X_12, O, GammaTilde_i{i} * I];
-        
-         
-        con3 = T  >= 0;
-                     
-        % Structural constraints
-        con4 = Q_ij{i,j} .* (nullMatBlock == 1) == zeros(12,12);  % Structural limitations (due to the format of the control law)
-                     
-        % Collecting Constraints
-        constraints = [con0, con1, con2, con3, con4];
+% Constraints in (46c)
+for l = 1:numOfLines
+    con2 = p_l{l} >= 0;
+    constraints = [constraints, con2];
+end
 
-    end
+% Constraints in (46d)
+con3_1 = gammaTilde >= 0;
+con3_2 = gammaTilde <= BarGamma;
+constraints = [constraints, con3_1, con3_2];
+
+% Constraint in (47)
+% O_n = zeros(3*numOfDGs);
+% O_bar = zeros(numOfDGs);
+O = zeros(3*numOfDGs, 3*numOfDGs]);
+%%%% Comment: Fix the following constraint with appropriate "O" variables
+T = [X_p_11, O, O_n, Q_ij{i,j}, X_p_11 * BarC, X_p_11;
+        O', BarX_Barp_11, O', BarX_Barp_11 * C, O_bar, O';
+        O_n, O, I, H, O, O_n;
+        Q_ij{i,j}', C' * BarX_Barp_11, H', -Q_ij{i,j}' * X_12 - X_21 * Q_ij{i,j} - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11 * BarX_12, -X_21 * X_p_11;
+        BarC' * X_p_11, O_bar, O', -BarC' * X_p_11 * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22, O';
+        X_p_11, O, O_n, -X_p_11 * X_12, O, GammaTilde_i{i} * I];
+            
+con4 = T  >= 0;
+constraints = [constraints, con4];
+
+% Structural constraints
+con5 = Q.*(nullMatBlock==1)==O;     % Structural limitations (due to the format of the control law)
+constraints = [constraints, con5];
+
+% Objective Function
+% costFun0 = 1*norm(Q.*costMatBlock,normType);
+costFun0 = sum(sum(Q.*costMatBlock)); %%% Play with this
+
+% Minimum Budget Constraints
+con6 = costFun0 >= 0.002;  %%% Play with this
+constraints = [constraints, con6];
+
+% Hard Graph Constraints (forcing K_ij = K_ji = 0 if i and j are not communication neighbors)
+con7 = Q.*(adjMatBlock==0)==O;      % Graph structure : hard constraint
+
+if isSoft
+    % Try to get a communication topology that is as much similar/colse as possible to the given communication tpology (by A_ij adjacency matrix)
+    cons = constraints; % Without the hard graph constraint con7
+    costFun = 1*costFun0 + 1*gammaTilde; % soft %%% Play with this
+else 
+    % Follow strictly the given communication tpology (by A_ij adjacency matrix)
+    cons = [constraints, con7]; % With the hard graph constraint con7
+    costFun = 1*costFun0 + 1*gammaTilde; % hard (same as soft) %%% Play with this
 end
 
 %% Solve the LMI problem (47)
 
-% Defining costfunction
-costFunction = 1 * costFun0 + 1 * GammaTilde_i{i};
-
 solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1);
-
-sol = optimize(constraints, costFunction, solverOptions);
-
+sol = optimize(cons,[costFun],solverOptions);
 statusGlobalController = sol.problem == 0;   
 
-%% Extract variable values
-for i = 1:1:numOfDGs
-    PVal = value(p_i{i});
-    QVal = value(Q_ij{i,j});
-    X_p_11Val = value(X_p_11);
 
-    % Calculate K_ij blocks
-    K = X_p_11Val \ QVal;
-    
-    % update DG
-    DG{i}.PVal = PVal;
-    DG{i}.Kij = K;
+
+%%%% Comment fix the following
+%% Extract variable values
+gammaTildeVal = value(gammaTilde)
+QVal = value(Q);
+X_p_11Val = value(X_p_11);
+KVal = X_p_11Val \ QVal;
+
+% Load KVal elements into a cell structure K{i,j} (i.e., partitioning KVal
+% into N\times N blocks)
+
+
+
+% Filter the K_ij values (weed out the ones with the smallest magnitudes)
+
+
+% Load the K_ij values to the DGs
+for i = 1:1:numOfDGs
+    for j = 1:1:numOfDGs
+        DG{i}.K{j} = K{i,j};  
+    end
 end
+
+
+%             costFun0Val = value(costFun0);
+%             costFunVal = value(costFun);
+%             PVal = value(P);
+%             QVal = value(Q);
+%             X_p_11Val = value(X_p_11);
+%             X_p_21Val = value(X_p_21);
+% 
+%             gammaSqVal = value(gammaSq);
+% 
+%             M_neVal = X_p_11Val\QVal;
+%             
+%             % Obtaining K_ij blocks
+%             M_neVal(nullMatBlock==1) = 0;
+%             maxNorm = 0;
+%             for i = 1:1:N
+%                 for j = 1:1:N
+%                     K{i,j} = M_neVal(3*(i-1)+1:3*i , 3*(j-1)+1:3*j); % (i,j)-th (3 x 3) block
+%                     normVal = max(max(abs(K{i,j})));
+%                     if normVal>maxNorm 
+%                         maxNorm = normVal;
+%                     end
+%                 end
+%             end
+%             
+%             % filtering out extremely small interconnections
+%             for i=1:1:N
+%                 for j=1:1:N
+%                     if i~=j
+%                         if isSoft
+%                             K{i,j}(abs(K{i,j})<0.0001*maxNorm) = 0;                       
+%                         else
+%                             if A(j+1,i+1)==0
+%                                 K{i,j} = zeros(3);
+%                             end
+%                         end
+%                     end
+%                     
+%                     K_ijMax = max(abs(K{i,j}(:)));
+%                     K{i,j}(abs(K{i,j})<0.01*K_ijMax) = 0;
+% 
+%                 end
+%             end
 
 
 

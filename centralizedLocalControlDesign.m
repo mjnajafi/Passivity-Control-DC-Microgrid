@@ -1,4 +1,7 @@
-function [DG,Line,statusLocalController] = centralizedLocalControlDesign(DG,Line,B_il,numOfDGs,numOfLines)
+function [DG,Line,statusLocalController] = centralizedLocalControlDesign(DG,Line,B_il,BarGamma)
+
+numOfDGs = size(B_il,1);
+numOfLines = size(B_il,2);
 
 % Create LMI variables necessary for (66)
 %% Variables corresponding to DGs like P_i, K_i, nu_i, rhoTilde_i, gammaTilde_i
@@ -61,11 +64,10 @@ for l = 1:1:numOfLines
     Rl = Line{l}.R;
     Ll = Line{l}.L;
     
-
     % Constraint (66a-Part2)
     con5 = P_l{l} >= 0;
     
-    p_l{l} = 1/numOfLines;
+    p_l{l} = 1/numOfLines;  % predefined value
 
     % Constraint (66c)
     Z = [(2*P_l{l}*Rl)/Ll - rho_l{l}, -P_l{l}/Ll + 1/2;
@@ -79,6 +81,8 @@ end
 
 
 %% Combine all mixed constraints (66f, 66g)
+%%%% Comment: Debug these constraints, why their addition affects the
+%%%% resulting passivity properties...?
 for i = 1:1:numOfDGs
     for l = 1:1:numOfLines
 
@@ -88,22 +92,24 @@ for i = 1:1:numOfDGs
        
            % Constraint (66f)
            con7_1 = rho_l{l} >= (p_i{i}*nu_i{i})/(p_l{l}*Ct^2);
-           con7_2 = rho_l{l} >= (rhoTilde_i{i})/(p_i{i}*p_l{l})*((p_i{i})/(2*Ct)-((p_l{l})/2))^2;
+           con7_2 = rho_l{l} >= ((rhoTilde_i{i})/(p_i{i}*p_l{l}))*((p_i{i}/(2*Ct))-(p_l{l}/2))^2;
            con7_3 = rho_l{l} >= 0;    
                 
            % Constraint (66g)
            epsilon = 0.001; % Minimum value
            n = 10;          % Number of intervals
-           BarGamma = 5;    % Fixed value for gammaBar
            rho_min = epsilon;
            rho_max = min(p_i{i}, 4*BarGamma/p_i{i});
            delta_i = (rho_max - rho_min) / n;
            
             
            % Initialize cell array to store individual constraints
-           con8 = cell(1, n);
+           con8 = [];
 
            % Loop over each k from 1 to n to create individual constraints
+           tilde_rho_i_prev = rho_min;
+           tilde_y_i_prev = -p_i{i} / (p_l{l} * tilde_rho_i_prev);
+
            for k = 1:n
 
                % Compute tilde_rho_i^k
@@ -112,28 +118,26 @@ for i = 1:1:numOfDGs
                % Compute tilde_y_i^k
                tilde_y_i_k = -p_i{i} / (p_l{l} * tilde_rho_i_k);
     
-               % Compute tilde_rho_i^{k-1} and tilde_y_i^{k-1}
-               if k == 1
-    
-                   % For k = 1, use tilde_rho_i^0 = rho_min
-                   tilde_rho_i_prev = rho_min;
-                   tilde_y_i_prev = -p_i{i} / (p_l{l} * tilde_rho_i_prev);
-               else
-                   % For k > 1, compute tilde_rho_i^{k-1}
-                   tilde_rho_i_prev = rho_min + (k - 2) * delta_i;
-                   tilde_y_i_prev = -p_i{i} / (p_l{l} * tilde_rho_i_prev);
-               end
-    
                % Compute m_k and c_k
                m_k = (tilde_y_i_k - tilde_y_i_prev) / delta_i;
                c_k = tilde_y_i_k - m_k * tilde_rho_i_k;
     
                % Define Constraint (66g)
-               con8{k} = nu_l{l} >= m_k * rhoTilde_i{i} + c_k;
+               con8_k = nu_l{l} >= m_k * rhoTilde_i{i} + c_k;
+
+               con8 = [con8, con8_k];
+
+               % Compute tilde_rho_i^{k-1} and tilde_y_i^{k-1}
+               tilde_rho_i_prev = tilde_rho_i_k;
+               tilde_y_i_prev = tilde_y_i_k;
+
            end
 
                % Collecting Constraints
-               % constraints = [constraints, con7_1, con7_2, con7_3, con8{k}];                 
+               
+               % constraints = [constraints, con7_3, con8];
+           % constraints = [constraints, con7_1, con7_2, con7_3, con8];
+
         end
     end
 end
@@ -158,16 +162,15 @@ for i = 1:1:numOfDGs
     K_iVal = value(K_i{i});
     nu_iVal = value(nu_i{i});
     rhoTilde_iVal = value(rhoTilde_i{i});
-    rho_iVal = 1 / value(rhoTilde_i{i});
+    rho_iVal = 1 / rhoTilde_iVal;
     gammaTilde_iVal = value(gammaTilde_i{i});
 
     % update DG
-    DG{i}.P = P_iVal;
-    DG{i}.Ki0 = K_iVal;
+    DG{i}.P0 = P_iVal;
+    DG{i}.K0 = K_iVal/P_iVal;
     DG{i}.nu = nu_iVal;
-    DG{i}.rhoTilde = rhoTilde_iVal;
     DG{i}.rho = rho_iVal;
-    DG{i}.gammaTilde = gammaTilde_iVal;
+    DG{i}.gammaTilde0 = gammaTilde_iVal;
 end
 
 for l = 1:1:numOfLines
@@ -176,9 +179,9 @@ for l = 1:1:numOfLines
     rho_lVal = value(rho_l{l});
 
     % update Line
-    Line{l}.P = P_lVal;
+    Line{l}.P0 = P_lVal;
     Line{l}.nu = nu_lVal;
-    Line{l}.rhoBar = rho_lVal;
+    Line{l}.rho = rho_lVal;
 end
 
 
