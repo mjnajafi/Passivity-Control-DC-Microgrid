@@ -1,4 +1,4 @@
-function [DG,Line] = centralizedLocalControlDesign(DG,Line,B_il,numOfDGs,numOfLines)
+function [DG,Line,statusLocalController] = centralizedLocalControlDesign(DG,Line,B_il,numOfDGs,numOfLines)
 
 % Create LMI variables necessary for (66)
 %% Variables corresponding to DGs like P_i, K_i, nu_i, rhoTilde_i, gammaTilde_i
@@ -149,7 +149,7 @@ solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1);
 
 sol = optimize(constraints, costFunction, solverOptions);
 
-status = sol.problem == 0;
+statusLocalController = sol.problem == 0;
 
 
 %% Extract variable values
