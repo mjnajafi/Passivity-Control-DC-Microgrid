@@ -133,7 +133,7 @@ for i = 1:1:numOfDGs
            end
 
                % Collecting Constraints
-               constraints = [constraints, con7_1, con7_2, con7_3, con8{k}];                 
+               % constraints = [constraints, con7_1, con7_2, con7_3, con8{k}];                 
         end
     end
 end
@@ -158,6 +158,7 @@ for i = 1:1:numOfDGs
     K_iVal = value(K_i{i});
     nu_iVal = value(nu_i{i});
     rhoTilde_iVal = value(rhoTilde_i{i});
+    rho_iVal = 1 / value(rhoTilde_i{i});
     gammaTilde_iVal = value(gammaTilde_i{i});
 
     % update DG
@@ -165,6 +166,7 @@ for i = 1:1:numOfDGs
     DG{i}.Ki0 = K_iVal;
     DG{i}.nu = nu_iVal;
     DG{i}.rhoTilde = rhoTilde_iVal;
+    DG{i}.rho = rho_iVal;
     DG{i}.gammaTilde = gammaTilde_iVal;
 end
 
