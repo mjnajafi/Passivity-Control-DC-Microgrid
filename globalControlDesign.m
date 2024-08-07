@@ -5,11 +5,10 @@ numOfLines = size(B_il,2);
 
 %% Creating C , BarC , and H Matrices
 
+%%% I just modified this C Matrix
 % Create C Matrix
 C = zeros(numOfLines, numOfDGs * 3);
 
-
-% Fill the C matrix
 for l = 1:numOfLines
     for i = 1:numOfDGs
         % Compute the correct column index for C
@@ -29,12 +28,10 @@ for l = 1:numOfLines
     end
 end
 
-
+%%% I just modified the dimension of H Matrix
 % Create H Matrix
 % H = zeros(numOfDGs, numOfDGs * 3);
 H = zeros(numOfDGs*3, numOfDGs * 3);
-
-
 
 for i = 1:numOfDGs
     H(i, (i-1)*3 + 3) = 1;
@@ -174,45 +171,14 @@ O_bar = zeros(numOfLines);
 O = zeros(3*numOfDGs, numOfLines);
 
 
-disp('X_p_11:');
-disp(size(X_p_11))
-disp('O:');
-disp(size(O))
-disp('O_n:');
-disp(size(O_n))
-disp('Q:');
-disp(size(Q))
-disp('BarC:');
-disp(size(BarC))
-disp('BarX_Barp_11:');
-disp(size(BarX_Barp_11))
-disp('C:');
-disp(size(C))
-disp('I:');
-disp(size(I))
-disp('O_bar:');
-disp(size(O_bar))
-disp('H:');
-disp(size(H))
-disp('X_12:');
-disp(size(X_12))
-disp('X_p_22:');
-disp(size(X_p_22))
-disp('BarX_Barp_22:');
-disp(size(BarX_Barp_22))
-disp('GammaTilde:');
-disp(size(GammaTilde))
-disp('BarX_12:');
-disp(size(BarX_12))
-
-
-%%%% Comment: Fix the following constraint with appropriate "O" variables
 T = [X_p_11, O, O_n, Q, X_p_11 * BarC, X_p_11;
         O', BarX_Barp_11, O', BarX_Barp_11 * C, O_bar, O';
         O_n, O, I, H, O, O_n;
         Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11 * BarX_12, -X_21 * X_p_11;
-        BarC' * X_p_11, O_bar, O', -BarC' * X_p_11 * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22, O';
-        X_p_11, O, O_n, -X_p_11 * X_12, O, GammaTilde];
+        BarC' * X_p_11', O_bar, O', -BarC' * X_p_11' * X_12 - BarX_21 * BarX_Barp_11' * C, -BarX_Barp_22, O';
+        X_p_11, O, O_n, -X_p_11' * X_12, O, GammaTilde];
+
+        
             
 con4 = T  >= 0;
 constraints = [constraints, con4];
@@ -245,85 +211,64 @@ end
 %% Solve the LMI problem (47)
 
 solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1);
+
 sol = optimize(cons,costFun,solverOptions);
+
 statusGlobalController = sol.problem == 0;   
-
-
 
 %%%% Comment fix the following
 %% Extract variable values
-gammaTildeVal = value(gammaTilde)
+gammaTildeVal = value(gammaTilde);
 QVal = value(Q);
 X_p_11Val = value(X_p_11);
 KVal = X_p_11Val \ QVal;
+costFun0Val = value(costFun0);
+costFunVal = value(costFun);
 
 % Load KVal elements into a cell structure K{i,j} (i.e., partitioning KVal
 % into N\times N blocks)
-
-
+% Obtaining K_ij blocks
+KVal(nullMatBlock ==1 ) = 0;
+maxNorm = 0;
+for i = 1:1:numOfDGs
+    for j = 1:1:numOfDGs
+        K{i,j} = KVal(3*(i-1)+1:3*i , 3*(j-1)+1:3*j); % (i,j)-th (3 x 3) block
+        normVal = max(max(abs(K{i,j})));
+        if normVal>maxNorm 
+            maxNorm = normVal;
+        end
+    end
+end
 
 % Filter the K_ij values (weed out the ones with the smallest magnitudes)
+% filtering out extremely small interconnections
+for i=1:1:numOfDGs
+    for j=1:1:numOfDGs
+        if i~=j
+            if isSoft
+                K{i,j}(abs(K{i,j})<0.0001*maxNorm) = 0;                       
+            else
+                if A(j+1,i+1)==0
+                    K{i,j} = zeros(3);
+                end
+            end
+        end
 
+        K_ijMax = max(abs(K{i,j}(:)));
+        K{i,j}(abs(K{i,j})<0.01*K_ijMax) = 0;
+
+    end
+end
 
 % Load the K_ij values to the DGs
 for i = 1:1:numOfDGs
     for j = 1:1:numOfDGs
         DG{i}.K{j} = K{i,j};  
     end
+
+    % update DG
+    DG{i}.K = KVal;
 end
-
-
-%             costFun0Val = value(costFun0);
-%             costFunVal = value(costFun);
-%             PVal = value(P);
-%             QVal = value(Q);
-%             X_p_11Val = value(X_p_11);
-%             X_p_21Val = value(X_p_21);
-% 
-%             gammaSqVal = value(gammaSq);
-% 
-%             M_neVal = X_p_11Val\QVal;
-%             
-%             % Obtaining K_ij blocks
-%             M_neVal(nullMatBlock==1) = 0;
-%             maxNorm = 0;
-%             for i = 1:1:N
-%                 for j = 1:1:N
-%                     K{i,j} = M_neVal(3*(i-1)+1:3*i , 3*(j-1)+1:3*j); % (i,j)-th (3 x 3) block
-%                     normVal = max(max(abs(K{i,j})));
-%                     if normVal>maxNorm 
-%                         maxNorm = normVal;
-%                     end
-%                 end
-%             end
-%             
-%             % filtering out extremely small interconnections
-%             for i=1:1:N
-%                 for j=1:1:N
-%                     if i~=j
-%                         if isSoft
-%                             K{i,j}(abs(K{i,j})<0.0001*maxNorm) = 0;                       
-%                         else
-%                             if A(j+1,i+1)==0
-%                                 K{i,j} = zeros(3);
-%                             end
-%                         end
-%                     end
-%                     
-%                     K_ijMax = max(abs(K{i,j}(:)));
-%                     K{i,j}(abs(K{i,j})<0.01*K_ijMax) = 0;
-% 
-%                 end
-%             end
-
-
-
-
-
-
-
-
-
 
 
 
