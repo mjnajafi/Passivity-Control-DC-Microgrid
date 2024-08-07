@@ -6,16 +6,17 @@ numOfLines = size(B_il,2);
 %% Creating C , BarC , and H Matrices
 
 % Create C Matrix
-C = zeros(numOfDGs, numOfLines * 3);
+C = zeros(numOfLines, numOfDGs * 3);
+
 
 % Fill the C matrix
 for l = 1:numOfLines
     for i = 1:numOfDGs
         % Compute the correct column index for C
-        columnIndex = (l-1)*3 + 1;
-        C(i, columnIndex) = B_il(i, l);
+        C(l, (i-1) * 3 + 1) = B_il(i, l);
     end
 end
+
 
 
 % Create BarC Matrix
@@ -30,8 +31,10 @@ end
 
 
 % Create H Matrix
-%%%% Comment: Dimentions of H are not correct, check Eq. (40) in the paper
-H = zeros(numOfDGs, numOfDGs * 3);
+% H = zeros(numOfDGs, numOfDGs * 3);
+H = zeros(numOfDGs*3, numOfDGs * 3);
+
+
 
 for i = 1:numOfDGs
     H(i, (i-1)*3 + 3) = 1;
@@ -124,12 +127,13 @@ BarX_Barp_11 = [];
 BarX_Barp_12 = [];
 BarX_12 = [];
 BarX_Barp_22 = [];
+
 for l = 1:1:numOfLines
     
     nu_l = Line{l}.nu;
     rho_l = Line{l}.rho;
 
-    % For Lines, according to equation (31), numOfInouts = numOfOutputs = 1
+    % For Lines, according to equation (31), numOfInputs = numOfOutputs = 1
     BarX_l_11 = -nu_l*I_bar;    %inputs x inputs
     BarX_l_12 = 0.5*I_bar;      %inputs x outputs
     BarX_l_22 = -rho_l*I_bar;   %outputs x outputs
@@ -165,22 +169,56 @@ con3_2 = gammaTilde <= BarGamma;
 constraints = [constraints, con3_1, con3_2];
 
 % Constraint in (47)
-% O_n = zeros(3*numOfDGs);
-% O_bar = zeros(numOfDGs);
-O = zeros(3*numOfDGs, 3*numOfDGs]);
+O_n = zeros(3*numOfDGs);
+O_bar = zeros(numOfLines);
+O = zeros(3*numOfDGs, numOfLines);
+
+
+disp('X_p_11:');
+disp(size(X_p_11))
+disp('O:');
+disp(size(O))
+disp('O_n:');
+disp(size(O_n))
+disp('Q:');
+disp(size(Q))
+disp('BarC:');
+disp(size(BarC))
+disp('BarX_Barp_11:');
+disp(size(BarX_Barp_11))
+disp('C:');
+disp(size(C))
+disp('I:');
+disp(size(I))
+disp('O_bar:');
+disp(size(O_bar))
+disp('H:');
+disp(size(H))
+disp('X_12:');
+disp(size(X_12))
+disp('X_p_22:');
+disp(size(X_p_22))
+disp('BarX_Barp_22:');
+disp(size(BarX_Barp_22))
+disp('GammaTilde:');
+disp(size(GammaTilde))
+disp('BarX_12:');
+disp(size(BarX_12))
+
+
 %%%% Comment: Fix the following constraint with appropriate "O" variables
-T = [X_p_11, O, O_n, Q_ij{i,j}, X_p_11 * BarC, X_p_11;
+T = [X_p_11, O, O_n, Q, X_p_11 * BarC, X_p_11;
         O', BarX_Barp_11, O', BarX_Barp_11 * C, O_bar, O';
         O_n, O, I, H, O, O_n;
-        Q_ij{i,j}', C' * BarX_Barp_11, H', -Q_ij{i,j}' * X_12 - X_21 * Q_ij{i,j} - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11 * BarX_12, -X_21 * X_p_11;
+        Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11 * BarX_12, -X_21 * X_p_11;
         BarC' * X_p_11, O_bar, O', -BarC' * X_p_11 * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22, O';
-        X_p_11, O, O_n, -X_p_11 * X_12, O, GammaTilde_i{i} * I];
+        X_p_11, O, O_n, -X_p_11 * X_12, O, GammaTilde];
             
 con4 = T  >= 0;
 constraints = [constraints, con4];
 
 % Structural constraints
-con5 = Q.*(nullMatBlock==1)==O;     % Structural limitations (due to the format of the control law)
+con5 = Q.*(nullMatBlock==1) == O_n;     % Structural limitations (due to the format of the control law)
 constraints = [constraints, con5];
 
 % Objective Function
@@ -192,7 +230,7 @@ con6 = costFun0 >= 0.002;  %%% Play with this
 constraints = [constraints, con6];
 
 % Hard Graph Constraints (forcing K_ij = K_ji = 0 if i and j are not communication neighbors)
-con7 = Q.*(adjMatBlock==0)==O;      % Graph structure : hard constraint
+con7 = Q.*(adjMatBlock==0) == O_n;      % Graph structure : hard constraint
 
 if isSoft
     % Try to get a communication topology that is as much similar/colse as possible to the given communication tpology (by A_ij adjacency matrix)
@@ -207,7 +245,7 @@ end
 %% Solve the LMI problem (47)
 
 solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1);
-sol = optimize(cons,[costFun],solverOptions);
+sol = optimize(cons,costFun,solverOptions);
 statusGlobalController = sol.problem == 0;   
 
 
