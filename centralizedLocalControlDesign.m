@@ -135,8 +135,8 @@ for i = 1:1:numOfDGs
 
                % Collecting Constraints
                
-               % constraints = [constraints, con7_3, con8];
-           % constraints = [constraints, con7_1, con7_2, con7_3, con8];
+               constraints = [constraints, con7_3, con8];
+               % constraints = [constraints, con7_1, con7_2, con7_3, con8];
 
         end
     end
