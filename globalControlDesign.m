@@ -1,4 +1,4 @@
-function [DG,Line,statusGlobalController] = globalControlDesign(DG,Line,A_ij,B_il,BarGamma,isSoft)
+function [DG,Line,statusGlobalController,gammaTildeVal] = globalControlDesign(DG,Line,A_ij,B_il,BarGamma,isSoft)
 
 numOfDGs = size(B_il,1);
 numOfLines = size(B_il,2);
@@ -83,13 +83,15 @@ GammaTilde = gammaTilde*I;
 
 Q = sdpvar(3*numOfDGs, 3*numOfDGs, 'full'); 
 
-for i = 1:numOfDGs
-    p_i{i} = sdpvar(1, 1, 'full');
-end
+P_i = sdpvar(numOfDGs, numOfDGs, 'diagonal');
+% for i = 1:numOfDGs
+%     P_i(i,i) = sdpvar(1, 1, 'full');
+% end
 
-for l = 1:numOfLines
-    p_l{l} = sdpvar(1, 1,'full');
-end
+P_l = sdpvar(numOfLines, numOfLines, 'diagonal');
+% for l = 1:numOfLines
+%     P_l(l,l) = sdpvar(1, 1,'full');
+% end
 
 
 I_n = eye(3);
@@ -108,15 +110,14 @@ for i = 1:1:numOfDGs
     X_i_12 = 0.5*I_n;      %inputs x outputs
     X_i_22 = -rho_i*I_n;   %outputs x outputs
 
-    X_p_11 = blkdiag(X_p_11, p_i{i}*X_i_11);
-    X_p_12 = blkdiag(X_p_12, p_i{i}*X_i_12);
-    X_p_22 = blkdiag(X_p_22, p_i{i}*X_i_22);
-    X_p_21 = X_p_12';
+    X_p_11 = blkdiag(X_p_11, P_i(i,i)*X_i_11);
+    X_p_12 = blkdiag(X_p_12, P_i(i,i)*X_i_12);
+    X_p_22 = blkdiag(X_p_22, P_i(i,i)*X_i_22);
     
     X_12 = blkdiag(X_12, (-1 / (2 * nu_i)) * I_n);
-    X_21 = X_12';
-
 end
+X_p_21 = X_p_12';
+X_21 = X_12';
 
 I_bar = eye(1);
 
@@ -135,14 +136,16 @@ for l = 1:1:numOfLines
     BarX_l_12 = 0.5*I_bar;      %inputs x outputs
     BarX_l_22 = -rho_l*I_bar;   %outputs x outputs
 
-    BarX_Barp_11 = blkdiag(BarX_Barp_11, p_l{l}*BarX_l_11);
-    BarX_Barp_12 = blkdiag(BarX_Barp_12, p_l{l}*BarX_l_12);
-    BarX_Barp_22 = blkdiag(BarX_Barp_22, p_l{l}*BarX_l_22);
-    BarX_Barp_21 = BarX_Barp_12';
-
+    BarX_Barp_11 = blkdiag(BarX_Barp_11, P_l(l,l)*BarX_l_11);
+    BarX_Barp_12 = blkdiag(BarX_Barp_12, P_l(l,l)*BarX_l_12);
+    BarX_Barp_22 = blkdiag(BarX_Barp_22, P_l(l,l)*BarX_l_22);
+    
     BarX_12 = blkdiag(BarX_12, (-1 / (2 * nu_l)) * I_bar);
-    BarX_21 = BarX_12';
+    
 end
+BarX_Barp_21 = BarX_Barp_12';
+BarX_21 = BarX_12';
+
 
 
 %% Constraints 
@@ -150,13 +153,13 @@ constraints = [];
 
 % Constraints in (46b)
 for i = 1:numOfDGs
-    con1 = p_i{i} >= 0;
+    con1 = P_i(i,i) >= 0;
     constraints = [constraints, con1];
 end
 
 % Constraints in (46c)
 for l = 1:numOfLines
-    con2 = p_l{l} >= 0;
+    con2 = P_l(l,l) >= 0;
     constraints = [constraints, con2];
 end
 
@@ -188,23 +191,24 @@ con5 = Q.*(nullMatBlock==1) == O_n;     % Structural limitations (due to the for
 constraints = [constraints, con5];
 
 % Objective Function
-% costFun0 = 1*norm(Q.*costMatBlock,normType);
-costFun0 = sum(sum(Q.*costMatBlock)); %%% Play with this
+normType = 2;
+costFun0 = 1*norm(Q.*costMatBlock,normType);
+% costFun0 = sum(sum(Q.*costMatBlock)); %%% Play with this
 
 % Minimum Budget Constraints
-con6 = costFun0 >= 0.002;  %%% Play with this
-constraints = [constraints, con6];
+con6 = costFun0 >= 0.00001;  %%% Play with this
+% constraints = [constraints, con6];
 
 % Hard Graph Constraints (forcing K_ij = K_ji = 0 if i and j are not communication neighbors)
-con7 = Q.*(adjMatBlock==0) == O_n;      % Graph structure : hard constraint
+% con7 = Q.*(adjMatBlock==0) == O_n;      % Graph structure : hard constraint
 
 if isSoft
     % Try to get a communication topology that is as much similar/colse as possible to the given communication tpology (by A_ij adjacency matrix)
-    cons = constraints; % Without the hard graph constraint con7
+    constraints = constraints; % Without the hard graph constraint con7
     costFun = 1*costFun0 + 1*gammaTilde; % soft %%% Play with this
 else 
     % Follow strictly the given communication tpology (by A_ij adjacency matrix)
-    cons = [constraints, con7]; % With the hard graph constraint con7
+    constraints = [constraints, con7]; % With the hard graph constraint con7
     costFun = 1*costFun0 + 1*gammaTilde; % hard (same as soft) %%% Play with this
 end
 
@@ -212,12 +216,34 @@ end
 
 solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1);
 
-sol = optimize(cons,costFun,solverOptions);
+sol = optimize(constraints,costFun,solverOptions);
+
 
 statusGlobalController = sol.problem == 0;   
 
 %%%% Comment fix the following
 %% Extract variable values
+
+% Study the components of T (all the 1x1 and 2x2 blocks we considered in
+% Theorem 2 to find necessary conditions)
+TVal = value(T)
+TValEigs = eig(TVal)
+
+T1Val = value(X_p_11)
+T1ValEigs = eig(T1Val)
+
+T2Val = value(BarX_Barp_11)
+T2ValEigs = eig(T2Val)
+
+T3Val = value(-Q' * X_12 - X_21 * Q - X_p_22)
+T3ValEigs = eig(T3Val)
+
+T4Val = value(- X_p_22)
+T4ValEigs = eig(T4Val)
+
+T5Val = value(-Q' * X_12 - X_21 * Q)
+T5ValEigs = eig(T5Val)
+
 gammaTildeVal = value(gammaTilde);
 QVal = value(Q);
 X_p_11Val = value(X_p_11);
@@ -228,7 +254,7 @@ costFunVal = value(costFun);
 % Load KVal elements into a cell structure K{i,j} (i.e., partitioning KVal
 % into N\times N blocks)
 % Obtaining K_ij blocks
-KVal(nullMatBlock ==1 ) = 0;
+KVal(nullMatBlock == 1) = 0;
 maxNorm = 0;
 for i = 1:1:numOfDGs
     for j = 1:1:numOfDGs
@@ -265,9 +291,6 @@ for i = 1:1:numOfDGs
     for j = 1:1:numOfDGs
         DG{i}.K{j} = K{i,j};  
     end
-
-    % update DG
-    DG{i}.K = KVal;
 end
 
 

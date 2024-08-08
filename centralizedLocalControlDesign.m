@@ -1,4 +1,4 @@
-function [DG,Line,statusLocalController] = centralizedLocalControlDesign(DG,Line,B_il,BarGamma)
+function [DG,Line,statusLocalController] = centralizedLocalControlDesign(DG,Line,B_il,BarGamma,piVals,plVals)
 
 numOfDGs = size(B_il,1);
 numOfLines = size(B_il,2);
@@ -41,7 +41,7 @@ for i = 1:1:numOfDGs
     con2 = W >= 0;
     
     % Constraint (66d)
-    p_i{i} = 1/numOfDGs;    % predefined value
+    p_i{i} = piVals(i); %1/numOfDGs;    % predefined value
     
     con3_1 = -gammaTilde_i{i}/p_i{i} <= nu_i{i};
     con3_2 = nu_i{i} <= 0;
@@ -67,7 +67,7 @@ for l = 1:1:numOfLines
     % Constraint (66a-Part2)
     con5 = P_l{l} >= 0;
     
-    p_l{l} = 1/numOfLines;  % predefined value
+    p_l{l} = plVals(l); %1/numOfLines;  % predefined value
 
     % Constraint (66c)
     Z = [(2*P_l{l}*Rl)/Ll - rho_l{l}, -P_l{l}/Ll + 1/2;
@@ -135,8 +135,10 @@ for i = 1:1:numOfDGs
 
                % Collecting Constraints
                
-               constraints = [constraints, con7_3, con8];
+               
+               %%% Comment1: Check con7_1 and con7_2
                % constraints = [constraints, con7_1, con7_2, con7_3, con8];
+               constraints = [constraints, con7_3, con8];
 
         end
     end
@@ -146,8 +148,14 @@ end
 
 %% Solve the LMI problem (66)
 
+costGamma = 0;
+for  i = 1:numOfDGs
+    % costGamma = costGamma + gammaTilde_i{i};
+    costGamma = costGamma + (-nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i};
+end
+
 % Defining costfunction
-costFunction = 0;
+costFunction = 0*costGamma; % Play with this choice
 
 solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1);
 
