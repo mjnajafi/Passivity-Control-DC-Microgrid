@@ -91,9 +91,10 @@ for i = 1:1:numOfDGs
         if B_il(i,l) ~= 0
        
            % Constraint (66f)
-           con7_1 = rho_l{l} >= (p_i{i}*nu_i{i})/(p_l{l}*Ct^2);
+           con7_1 = rho_l{l} >= -(p_i{i}*nu_i{i})/(p_l{l}*Ct^2);
            con7_2 = rho_l{l} >= ((rhoTilde_i{i})/(p_i{i}*p_l{l}))*((p_i{i}/(2*Ct))-(p_l{l}/2))^2;
            con7_3 = rho_l{l} >= 0;    
+           
                 
            % Constraint (66g)
            epsilon = 0.001; % Minimum value
@@ -137,8 +138,8 @@ for i = 1:1:numOfDGs
                
                
                %%% Comment1: Check con7_1 and con7_2
-               % constraints = [constraints, con7_1, con7_2, con7_3, con8];
-               constraints = [constraints, con7_3, con8];
+               constraints = [constraints,con7_1, con7_2, con7_3,con8];
+               % constraints = [constraints, con7_3, con8];
 
         end
     end
@@ -157,7 +158,7 @@ end
 % Defining costfunction
 costFunction = 0*costGamma; % Play with this choice
 
-solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1);
+solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0);
 
 sol = optimize(constraints, costFunction, solverOptions);
 

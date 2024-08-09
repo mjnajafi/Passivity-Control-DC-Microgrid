@@ -172,18 +172,38 @@ constraints = [constraints, con3_1, con3_2];
 O_n = zeros(3*numOfDGs);
 O_bar = zeros(numOfLines);
 O = zeros(3*numOfDGs, numOfLines);
+% 
+Mat1 = [X_p_11];
+
+Mat2 = [X_p_11, O;
+         O', BarX_Barp_11];
+
+Mat3 = [X_p_11, O, O_n;
+         O', BarX_Barp_11, O';
+         O_n, O, I];
+
+Mat4 = [X_p_11, O, O_n, Q;
+        O', BarX_Barp_11, O', BarX_Barp_11 * C;
+        O_n, O, I, H;
+        Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22];
+
+Mat5 = [X_p_11, O, O_n, Q, X_p_11 * BarC;
+        O', BarX_Barp_11, O', BarX_Barp_11 * C, O_bar;
+        O_n, O, I, H, O;
+        Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12;
+        BarC' * X_p_11', O_bar, O', -BarC' * X_p_11' * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22];
 
 
-T = [X_p_11, O, O_n, Q, X_p_11 * BarC, X_p_11;
+Mat6 = [X_p_11, O, O_n, Q, X_p_11 * BarC, X_p_11;
         O', BarX_Barp_11, O', BarX_Barp_11 * C, O_bar, O';
         O_n, O, I, H, O, O_n;
-        Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11 * BarX_12, -X_21 * X_p_11;
-        BarC' * X_p_11', O_bar, O', -BarC' * X_p_11' * X_12 - BarX_21 * BarX_Barp_11' * C, -BarX_Barp_22, O';
+        Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12, -X_21 * X_p_11;
+        BarC' * X_p_11', O_bar, O', -BarC' * X_p_11' * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22, O';
         X_p_11, O, O_n, -X_p_11' * X_12, O, GammaTilde];
 
-        
-            
-con4 = T  >= 0;
+T = Mat4;
+              
+con4 = T >= 0;
 constraints = [constraints, con4];
 
 % Structural constraints
@@ -214,10 +234,9 @@ end
 
 %% Solve the LMI problem (47)
 
-solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1);
+solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0);
 
 sol = optimize(constraints,costFun,solverOptions);
-
 
 statusGlobalController = sol.problem == 0;   
 
@@ -226,23 +245,23 @@ statusGlobalController = sol.problem == 0;
 
 % Study the components of T (all the 1x1 and 2x2 blocks we considered in
 % Theorem 2 to find necessary conditions)
-TVal = value(T)
-TValEigs = eig(TVal)
+TVal = value(T);
+TValEigs = eig(TVal);
 
-T1Val = value(X_p_11)
-T1ValEigs = eig(T1Val)
+T1Val = value(X_p_11);
+T1ValEigs = eig(T1Val);
 
-T2Val = value(BarX_Barp_11)
-T2ValEigs = eig(T2Val)
+T2Val = value(BarX_Barp_11);
+T2ValEigs = eig(T2Val);
 
-T3Val = value(-Q' * X_12 - X_21 * Q - X_p_22)
-T3ValEigs = eig(T3Val)
+T3Val = value(-Q' * X_12 - X_21 * Q - X_p_22);
+T3ValEigs = eig(T3Val);
 
-T4Val = value(- X_p_22)
-T4ValEigs = eig(T4Val)
+T4Val = value(- X_p_22);
+T4ValEigs = eig(T4Val);
 
-T5Val = value(-Q' * X_12 - X_21 * Q)
-T5ValEigs = eig(T5Val)
+T5Val = value(-Q' * X_12 - X_21 * Q);
+T5ValEigs = eig(T5Val);
 
 gammaTildeVal = value(gammaTilde);
 QVal = value(Q);
