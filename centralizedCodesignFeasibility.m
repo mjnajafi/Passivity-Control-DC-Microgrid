@@ -1,13 +1,28 @@
 function [C,Ceq] = centralizedCodesignFeasibility(pVals)
-    %%$ Comment: Complete this function
-N = 10;
 
-% Temorary
-statusL = ones(N,1);
-statusG = 1;
+global DG Line B_il A_ij
+   
+BarGamma = 1;    % Fixed value for gammaBar
+isSoft = 1;
 
-C = [statusL-ones(N,1); statusG-1]; % All local and global controllers need to be feasible
+numOfDGs = size(B_il,1);
+numOfLines = size(B_il,2);
+
+piVals = pVals(1:numOfDGs);
+plVals = pVals((numOfDGs+1):end);
+
+
+% Define feasibility status
+statusL = ones(numOfDGs, 1); % Assume all local controllers are feasible
+statusG = 1; % Assume global controller design is feasible
+
+
+[DG,Line, statusGlobalController, gammaTildeVal] = globalControlDesign(DG,Line,A_ij,B_il,BarGamma,isSoft);
+
+C = [statusL-ones(numOfDGs,1); statusG-1]; % All local and global controllers need to be feasible
 Ceq = [];
+
+end
 
 %% Example codes from platooning problem
 % function [C,Ceq] = centralizedRobustControllerSynthesis2CodesignFeasibility(obj,pVals)
@@ -136,5 +151,5 @@ Ceq = [];
 % C = [statusLVals-ones(N,1); statusG-1; statusK-1];
 % Ceq = [];
 % end
-end
+
 

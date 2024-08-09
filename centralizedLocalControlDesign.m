@@ -41,7 +41,7 @@ for i = 1:1:numOfDGs
     con2 = W >= 0;
     
     % Constraint (66d)
-    p_i{i} = piVals(i); %1/numOfDGs;    % predefined value
+    p_i{i} = piVals(i); % 1/numOfDGs  % predefined value
     
     con3_1 = -gammaTilde_i{i}/p_i{i} <= nu_i{i};
     con3_2 = nu_i{i} <= 0;
@@ -125,8 +125,9 @@ for i = 1:1:numOfDGs
     
                % Define Constraint (66g)
                con8_k = nu_l{l} >= m_k * rhoTilde_i{i} + c_k;
-
+               % 
                con8 = [con8, con8_k];
+                
 
                % Compute tilde_rho_i^{k-1} and tilde_y_i^{k-1}
                tilde_rho_i_prev = tilde_rho_i_k;

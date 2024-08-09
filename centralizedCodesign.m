@@ -1,24 +1,36 @@
 function costFunVal = centralizedCodesign(pVals)
-    %%$ Comment: Complete this function
-    piVals = pVals(1:numOfDGs);
-    plVals = pVals((numOfDGs+1):end);
 
-    piVals = pScalar*ones(1,numOfDGs);
-    plVals = pScalar*ones(1,numOfLines);
+global DG Line B_il A_ij
+    
+numOfDGs = size(B_il,1);
+numOfLines = size(B_il,2);
 
-    [DG,Line,statusLocalController] = centralizedLocalControlDesign(DG,Line,B_il,BarGamma,piVals,plVals); % topologyMetrics may be the B matrix 
-    if statusLocalController==0
-        costFunVal = 1000000;
-        return;
-    end
+piVals = pVals(1:numOfDGs);
+plVals = pVals((numOfDGs+1):end);
 
-    [DG,Line,statusGlobalController,gammaTildeVal] = globalControlDesign(DG,Line,A_ij,B_il,BarGamma,isSoft)
-    if statusGlobalController==0
-        costFunVal = 1000000;
-        return;
-    end
+% Fixed parameters
+BarGamma = 5; % Example fixed value for gammaBar
+isSoft = 1; % Example value for soft constraint
+ 
+pScalar = 1/(numOfDGs+numOfLines);
+piVals = pScalar*ones(1,numOfDGs);
+plVals = pScalar*ones(1,numOfLines);
 
-    costFunVal = gammaTildeVal;
+[DG,Line,statusLocalController] = centralizedLocalControlDesign(DG,Line,B_il,BarGamma,piVals,plVals); % topologyMetrics may be the B matrix 
+if statusLocalController==0
+    costFunVal = 1000000;
+    return;
+end
+
+[DG,Line,statusGlobalController,gammaTildeVal] = globalControlDesign(DG,Line,A_ij,B_il,BarGamma,isSoft);
+if statusGlobalController == 0
+    costFunVal = 1000000;
+    return;
+end
+
+costFunVal = gammaTildeVal;
+
+end
 
 %% Example codes from platooning problem
 % function gammaSqVal = centralizedRobustControllerSynthesis2Codesign(obj,pVals)
@@ -149,5 +161,5 @@ function costFunVal = centralizedCodesign(pVals)
 %     end
 % end
 
-end
+
 
