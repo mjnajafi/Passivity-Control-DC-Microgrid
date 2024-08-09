@@ -157,9 +157,9 @@ for  i = 1:numOfDGs
 end
 
 % Defining costfunction
-costFunction = 0*costGamma; % Play with this choice
+costFunction = 1*costGamma; % Play with this choice
 
-solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0);
+solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1);
 
 sol = optimize(constraints, costFunction, solverOptions);
 

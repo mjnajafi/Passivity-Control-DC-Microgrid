@@ -1,6 +1,7 @@
-function [piVals, plVals] = optimizeCodesignParameters(DG,Line,B_il)
+function [piVals, plVals] = optimizeCodesignParameters()
 
 global DG Line B_il A_ij
+
 BarGamma = 1;    % Fixed value for gammaBar
 numOfDGs = size(B_il,1);
 numOfLines = size(B_il,2);
@@ -18,8 +19,8 @@ A = [];
 b = [];
 Aeq = [];
 beq = [];
-lb = zeros(numOfDGs,1);
-ub = inf*ones(numOfDGs,1);
+lb = zeros(numOfDGs+numOfLines,1);
+ub = inf*ones(numOfDGs+numOfLines,1);
 
 % p0 = (1/N)*ones(N,1); % initial condition
 piVals0 = (1/numOfDGs)*ones(1,numOfDGs); 

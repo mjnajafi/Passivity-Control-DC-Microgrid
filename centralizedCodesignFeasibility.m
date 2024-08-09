@@ -2,7 +2,7 @@ function [C,Ceq] = centralizedCodesignFeasibility(pVals)
 
 global DG Line B_il A_ij
    
-BarGamma = 1;    % Fixed value for gammaBar
+BarGamma = 5;    % Fixed value for gammaBar
 isSoft = 1;
 
 numOfDGs = size(B_il,1);
@@ -13,13 +13,15 @@ plVals = pVals((numOfDGs+1):end);
 
 
 % Define feasibility status
-statusL = ones(numOfDGs, 1); % Assume all local controllers are feasible
-statusG = 1; % Assume global controller design is feasible
+statusL = 0; % Assume all local controllers are feasible
+statusG = 0; % Assume global controller design is feasible
+
+[DG1,Line1,statusL] = centralizedLocalControlDesign(DG,Line,B_il,BarGamma,piVals,plVals) % topologyMetrics may be the B matrix 
 
 
-[DG,Line, statusGlobalController, gammaTildeVal] = globalControlDesign(DG,Line,A_ij,B_il,BarGamma,isSoft);
+[~,~, statusG,~] = globalControlDesign(DG1,Line1,A_ij,B_il,BarGamma,isSoft);
 
-C = [statusL-ones(numOfDGs,1); statusG-1]; % All local and global controllers need to be feasible
+C = [statusL-1; statusG-1]; % All local and global controllers need to be feasible
 Ceq = [];
 
 end

@@ -12,23 +12,29 @@ plVals = pVals((numOfDGs+1):end);
 BarGamma = 5; % Example fixed value for gammaBar
 isSoft = 1; % Example value for soft constraint
  
-pScalar = 1/(numOfDGs+numOfLines);
-piVals = pScalar*ones(1,numOfDGs);
-plVals = pScalar*ones(1,numOfLines);
+% pScalar = 1/(numOfDGs+numOfLines);
+% piVals = pScalar*ones(1,numOfDGs);
+% plVals = pScalar*ones(1,numOfLines);
 
-[DG,Line,statusLocalController] = centralizedLocalControlDesign(DG,Line,B_il,BarGamma,piVals,plVals); % topologyMetrics may be the B matrix 
+[DG1,Line1,statusLocalController] = centralizedLocalControlDesign(DG,Line,B_il,BarGamma,piVals,plVals); % topologyMetrics may be the B matrix 
 if statusLocalController==0
     costFunVal = 1000000;
     return;
 end
 
-[DG,Line,statusGlobalController,gammaTildeVal] = globalControlDesign(DG,Line,A_ij,B_il,BarGamma,isSoft);
+[DG1,~,statusGlobalController,gammaTildeVal] = globalControlDesign(DG1,Line1,A_ij,B_il,BarGamma,isSoft);
 if statusGlobalController == 0
     costFunVal = 1000000;
     return;
 end
+K = [];
+for i = 1:1:numOfDGs
+    K = [K;cell2mat(DG1{i}.K)];
+end
 
-costFunVal = gammaTildeVal;
+
+
+costFunVal = gammaTildeVal + norm(K);
 
 end
 
