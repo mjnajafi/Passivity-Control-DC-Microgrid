@@ -216,11 +216,11 @@ costFun0 = 1*norm(Q.*costMatBlock,normType);
 % costFun0 = sum(sum(Q.*costMatBlock)); %%% Play with this
 
 % Minimum Budget Constraints
-con6 = costFun0 >= 0.001;  %%% Play with this
+% con6 = costFun0 >= 0.001;  %%% Play with this
 % constraints = [constraints, con6];
 
 % Hard Graph Constraints (forcing K_ij = K_ji = 0 if i and j are not communication neighbors)
-con7 = Q.*(adjMatBlock==0) == O_n;      % Graph structure : hard constraint
+% con7 = Q.*(adjMatBlock==0) == O_n;      % Graph structure : hard constraint
 
 if isSoft
     % Try to get a communication topology that is as much similar/colse as possible to the given communication tpology (by A_ij adjacency matrix)

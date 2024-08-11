@@ -7,12 +7,21 @@ function DG = GenerateDG(R0,L0,C0,RL0,coords_i)
     RLi = RL0 + 0.01*rand();
     Yi = 1 / RLi;
     
+    % Ai = [-Yi/Ci, 1/Ci, 0;
+    %            -1/Li, -Ri/Li, 0;
+    %             1, 0, 0];
+    % 
+
     Ai = [-Yi/Ci, 1/Ci, 0;
                -1/Li, -Ri/Li, 0;
                 1, 0, 0];
+
+    
+    
     
     Bi = [0; 1/Li; 0];
-    
+
+       
     % Storing
     DG.R = Ri;
     DG.L = Li;

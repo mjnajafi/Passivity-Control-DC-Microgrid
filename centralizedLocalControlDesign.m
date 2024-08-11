@@ -41,7 +41,7 @@ for i = 1:1:numOfDGs
     con2 = W >= 0;
     
     % Constraint (66d)
-    p_i{i} = piVals(i); % 1/numOfDGs  % predefined value
+    p_i{i} = piVals(i); % predefined value
     
     con3_1 = -gammaTilde_i{i}/p_i{i} <= nu_i{i};
     con3_2 = nu_i{i} <= 0;
@@ -139,7 +139,7 @@ for i = 1:1:numOfDGs
                
                
                %%% Comment1: Check con7_1 and con7_2
-               constraints = [constraints,con7_1, con7_2, con7_3,con8];
+               constraints = [constraints, con7_1, con7_2, con7_3, con8];
                % constraints = [constraints, con7_3, con8];
 
         end
