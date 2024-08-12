@@ -1,4 +1,4 @@
-function [DG,Line,statusGlobalController,gammaTildeVal] = globalControlDesign(DG,Line,A_ij,B_il,BarGamma,isSoft)
+function [DG,Line,statusGlobalController,gammaTildeVal,K,C,BarC,H] = globalControlDesign(DG,Line,A_ij,B_il,BarGamma,isSoft)
 
 numOfDGs = size(B_il,1);
 numOfLines = size(B_il,2);
@@ -28,14 +28,27 @@ for l = 1:numOfLines
     end
 end
 
-%%% I just modified the dimension of H Matrix
-% Create H Matrix
-% H = zeros(numOfDGs, numOfDGs * 3);
-H = zeros(numOfDGs*3, numOfDGs * 3);
 
+% Create H Matrix
+
+% Number of Distributed Generators
+
+% Initialize H with zeros
+H = zeros(3*numOfDGs, numOfDGs);
+
+% Define the pattern to be placed in each diagonal block
+pattern = [0 0 0; 0 0 0; 0 0 1];
+
+
+% Place the pattern in each diagonal block
 for i = 1:numOfDGs
-    H(i, (i-1)*3 + 3) = 1;
+    % Calculate the starting index for the current diagonal block
+    idx = (i-1)*3 + 1;
+    
+    % Place the pattern in the current diagonal block
+    H(idx:idx+2, idx:idx+2) = pattern;
 end
+
 
 
 
@@ -308,9 +321,16 @@ end
 for i = 1:1:numOfDGs
     for j = 1:1:numOfDGs
         DG{i}.K{j} = K{i,j};  
+        % K = K{i,j};
     end
 end
 
-
+% Load the K_ij values to the DGs
+for i = 1:numOfDGs
+    DG{i}.K = cell( 1,numOfDGs); % Initialize K as a cell array
+    for j = 1:numOfDGs
+        DG{i}.K{j} = K(i,j); % Use parentheses for numeric array indexing
+    end
+end
 
 end
