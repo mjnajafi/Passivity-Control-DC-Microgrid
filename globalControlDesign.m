@@ -31,21 +31,13 @@ end
 
 % Create H Matrix
 
-% Number of Distributed Generators
-
-% Initialize H with zeros
-H = zeros(3*numOfDGs, numOfDGs);
+H = zeros(3*numOfDGs, 3*numOfDGs);
 
 % Define the pattern to be placed in each diagonal block
 pattern = [0 0 0; 0 0 0; 0 0 1];
 
-
-% Place the pattern in each diagonal block
 for i = 1:numOfDGs
-    % Calculate the starting index for the current diagonal block
     idx = (i-1)*3 + 1;
-    
-    % Place the pattern in the current diagonal block
     H(idx:idx+2, idx:idx+2) = pattern;
 end
 

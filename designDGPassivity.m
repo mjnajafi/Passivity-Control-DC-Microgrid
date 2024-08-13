@@ -1,4 +1,4 @@
-function [DG, numOfDGs, rhoTilde_i, nu_i, gammaTilde_i,statusDG] = designDGPassivity(DG, B_il,piVals)
+function [DG, rhoTilde_i, nu_i, gammaTilde_i,statusDG] = designDGPassivity(DG, B_il, piVals)
 
 numOfDGs = size(B_il, 1);
 
@@ -60,7 +60,7 @@ sol = optimize(constraints, costFunction, solverOptions);
 statusDG = sol.problem == 0;
 
 % Extract variable values
-piVals = zeros(numOfDGs, 1);
+
 for i = 1:numOfDGs
     P_iVal = value(P_i{i});
     K_iVal = value(K_i{i});
