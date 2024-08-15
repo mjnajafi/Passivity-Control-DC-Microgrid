@@ -31,14 +31,10 @@ end
 
 % Create H Matrix
 
-H = zeros(3*numOfDGs, 3*numOfDGs);
-
-% Define the pattern to be placed in each diagonal block
-pattern = [0 0 0; 0 0 0; 0 0 1];
-
+H_i = [0, 0 , 1];
+H = [];
 for i = 1:numOfDGs
-    idx = (i-1)*3 + 1;
-    H(idx:idx+2, idx:idx+2) = pattern;
+    H = blkdiag(H, H_i);
 end
 
 
@@ -83,6 +79,7 @@ costMatBlock = cell2mat(costMatBlock);   %%% Note that this matrix contains the 
 %% Variables corresponding to DGs like 
 
 I = eye(3*numOfDGs);
+I_N = eye(numOfDGs);
 gammaTilde = sdpvar(1, 1,'full');
 GammaTilde = gammaTilde*I;
 
@@ -174,37 +171,39 @@ con3_2 = gammaTilde <= BarGamma;
 constraints = [constraints, con3_1, con3_2];
 
 % Constraint in (47)
-O_n = zeros(3*numOfDGs);
+O_n = zeros(numOfDGs, 3*numOfDGs);
 O_bar = zeros(numOfLines);
-O = zeros(3*numOfDGs, numOfLines);
+O_N = zeros(3*numOfDGs, numOfLines);
+O = zeros(numOfDGs, numOfLines);
+O_3N = zeros(3*numOfDGs);
+
+% Mat1 = [X_p_11];
 % 
-Mat1 = [X_p_11];
-
-Mat2 = [X_p_11, O;
-         O', BarX_Barp_11];
-
-Mat3 = [X_p_11, O, O_n;
-         O', BarX_Barp_11, O';
-         O_n, O, I];
-
-Mat4 = [X_p_11, O, O_n, Q;
-        O', BarX_Barp_11, O', BarX_Barp_11 * C;
-        O_n, O, I, H;
-        Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22];
-
-Mat5 = [X_p_11, O, O_n, Q, X_p_11 * BarC;
-        O', BarX_Barp_11, O', BarX_Barp_11 * C, O_bar;
-        O_n, O, I, H, O;
-        Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12;
-        BarC' * X_p_11', O_bar, O', -BarC' * X_p_11' * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22];
+% Mat2 = [X_p_11, O;
+%          O', BarX_Barp_11];
+% 
+% Mat3 = [X_p_11, O, O_n;
+%          O', BarX_Barp_11, O';
+%          O_n, O, I];
+% 
+% Mat4 = [X_p_11, O, O_n, Q;
+%         O', BarX_Barp_11, O', BarX_Barp_11 * C;
+%         O_n, O, I, H;
+%         Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22];
+% 
+% Mat5 = [X_p_11, O, O_n, Q, X_p_11 * BarC;
+%         O', BarX_Barp_11, O', BarX_Barp_11 * C, O_bar;
+%         O_n, O, I, H, O;
+%         Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12;
+%         BarC' * X_p_11', O_bar, O', -BarC' * X_p_11' * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22];
 
 
-Mat6 = [X_p_11, O, O_n, Q, X_p_11 * BarC, X_p_11;
-        O', BarX_Barp_11, O', BarX_Barp_11 * C, O_bar, O';
-        O_n, O, I, H, O, O_n;
+Mat6 = [X_p_11, O_N, O_n', Q, X_p_11 * BarC, X_p_11;
+        O_N', BarX_Barp_11, O', BarX_Barp_11 * C, O_bar, O_N';
+        O_n, O, I_N, H, O, O_n;
         Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12, -X_21 * X_p_11;
-        BarC' * X_p_11', O_bar, O', -BarC' * X_p_11' * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22, O';
-        X_p_11, O, O_n, -X_p_11' * X_12, O, GammaTilde];
+        BarC' * X_p_11', O_bar, O', -BarC' * X_p_11' * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22, O_N';
+        X_p_11, O_N, O_n', -X_p_11' * X_12, O_N, GammaTilde];
 
 T = Mat6;
               
@@ -212,7 +211,7 @@ con4 = T >= 0;
 constraints = [constraints, con4];
 
 % Structural constraints
-con5 = Q.*(nullMatBlock==1) == O_n;     % Structural limitations (due to the format of the control law)
+con5 = Q.*(nullMatBlock==1) == O_3N;     % Structural limitations (due to the format of the control law)
 constraints = [constraints, con5];
 
 % Objective Function
@@ -225,7 +224,7 @@ con6 = costFun0 >= 0.001;  %%% Play with this
 % constraints = [constraints, con6];
 
 % Hard Graph Constraints (forcing K_ij = K_ji = 0 if i and j are not communication neighbors)
-con7 = Q.*(adjMatBlock==0) == O_n;      % Graph structure : hard constraint
+con7 = Q.*(adjMatBlock==0) == O_3N;      % Graph structure : hard constraint
 
 if isSoft
     % Try to get a communication topology that is as much similar/colse as possible to the given communication tpology (by A_ij adjacency matrix)
