@@ -177,25 +177,25 @@ O_N = zeros(3*numOfDGs, numOfLines);
 O = zeros(numOfDGs, numOfLines);
 O_3N = zeros(3*numOfDGs);
 
-% Mat1 = [X_p_11];
-% 
-% Mat2 = [X_p_11, O;
-%          O', BarX_Barp_11];
-% 
-% Mat3 = [X_p_11, O, O_n;
-%          O', BarX_Barp_11, O';
-%          O_n, O, I];
-% 
-% Mat4 = [X_p_11, O, O_n, Q;
-%         O', BarX_Barp_11, O', BarX_Barp_11 * C;
-%         O_n, O, I, H;
-%         Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22];
-% 
-% Mat5 = [X_p_11, O, O_n, Q, X_p_11 * BarC;
-%         O', BarX_Barp_11, O', BarX_Barp_11 * C, O_bar;
-%         O_n, O, I, H, O;
-%         Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12;
-%         BarC' * X_p_11', O_bar, O', -BarC' * X_p_11' * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22];
+Mat1 = [X_p_11];
+
+Mat2 = [X_p_11, O_N;
+         O_N', BarX_Barp_11];
+
+Mat3 = [X_p_11, O_N, O_n';
+         O_N', BarX_Barp_11, O';
+         O_n, O, I_N];
+
+Mat4 = [X_p_11, O_N, O_n', Q;
+        O_N', BarX_Barp_11, O', BarX_Barp_11 * C;
+        O_n, O, I_N, H;
+        Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22];
+
+Mat5 = [X_p_11, O_N, O_n', Q, X_p_11 * BarC;
+        O_N', BarX_Barp_11, O', BarX_Barp_11 * C, O_bar;
+        O_n, O, I_N, H, O;
+        Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12;
+        BarC' * X_p_11', O_bar, O', -BarC' * X_p_11' * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22];
 
 
 Mat6 = [X_p_11, O_N, O_n', Q, X_p_11 * BarC, X_p_11;
