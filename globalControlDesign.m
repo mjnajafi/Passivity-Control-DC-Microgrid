@@ -5,13 +5,11 @@ numOfLines = size(B_il,2);
 
 %% Creating C , BarC , and H Matrices
 
-%%% I just modified this C Matrix
 % Create C Matrix
 C = zeros(numOfLines, numOfDGs * 3);
 
 for l = 1:numOfLines
     for i = 1:numOfDGs
-        % Compute the correct column index for C
         C(l, (i-1) * 3 + 1) = B_il(i, l);
     end
 end
