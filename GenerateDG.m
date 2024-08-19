@@ -1,3 +1,10 @@
+% This function, GenerateDG, generates a Distributed Generator (DG) with
+% randomly perturbed electrical parameters based on initial values provided 
+% as inputs (R0, L0, C0, RL0). The function creates and stores the system's 
+% attributes, including the resistance (R), inductance (L), capacitance (C), 
+% load admittance (Y), state-space matrices (A and B), and coordinates 
+% (coords_i) in a structure named DG.
+
 function DG = GenerateDG(R0,L0,C0,RL0,coords_i)
 
     % Generating

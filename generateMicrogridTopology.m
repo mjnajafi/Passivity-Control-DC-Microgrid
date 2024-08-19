@@ -1,3 +1,10 @@
+% This function, generateMicrogridTopology, generates and visualizes a random microgrid 
+% topology for a given number of Distributed Generators (DGs). The topology is defined 
+% by randomly placed DGs within a 2D space, where connections between DGs are determined 
+% based on a distance threshold. The function outputs the coordinates of the DGs, 
+% the adjacency matrix representing connections between DGs, and the B_il matrix 
+% that describes the incidence relationship between DGs and the transmission lines.
+
 function [coords, adjMatrix, B_il] = generateMicrogridTopology(numOfDGs, threshold)
     % Generate random points and visualize the microgrid topology.
     %
