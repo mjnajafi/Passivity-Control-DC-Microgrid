@@ -1,3 +1,8 @@
+% This function, ComputePassivityForDGs, computes the passivity indices for a given 
+% Distributed Generator (DG) using a Linear Matrix Inequality (LMI) approach. The function 
+% takes the state-space matrices of the DG (stored in the DG structure) and solves an 
+% optimization problem to determine the passivity parameters P, K, nu, and rho. 
+
 function [PVal, KVal, LVal, nuVal, rhoVal, status] = ComputePassivityForDGs(DG)
     
     

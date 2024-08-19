@@ -1,3 +1,8 @@
+% This function, ComputePassivityForLines, calculates the passivity indices for a 
+% transmission line based on its electrical parameters. The function formulates 
+% and solves an optimization problem using Linear Matrix Inequality (LMI) methods 
+% to find the passivity parameters PBar, nuBar, and rhoBar for the given line.
+
 function [PBarVal, nuBarVal, rhoBarVal, status] = ComputePassivityForLines(Line)
     
     Ll = Line.L;

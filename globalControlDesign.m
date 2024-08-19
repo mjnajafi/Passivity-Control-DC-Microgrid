@@ -1,3 +1,10 @@
+% This function constructs the control matrices C, BarC, and H, and 
+% formulates the optimization problem with appropriate constraints and 
+% objective functions to ensure the stability and performance of the 
+% microgrid under a given communication topology defined by the adjacency 
+% matrix A_ij. The function also computes the optimal gain matrices K for 
+% each pair of DGs based on the optimization results.
+
 function [DG,Line,statusGlobalController,gammaTildeVal,K,C,BarC,H] = globalControlDesign(DG,Line,A_ij,B_il,BarGamma,isSoft)
 
 numOfDGs = size(B_il,1);

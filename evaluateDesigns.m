@@ -1,3 +1,6 @@
+% This function evaluates the feasibility of local and global control designs 
+% for different values of numOfDGs, threshold, and pScalar.
+
 function [numOfDGs, threshold] = evaluateDesigns(numDGsRange, thresholdRange, BarGamma, pScalarRange, isSoft);
     % Function to evaluate the feasibility of local and global control designs
     % for different values of numOfDGs, threshold, and pScalar.

@@ -1,3 +1,7 @@
+% This function designs the passivity parameters for multiple Distributed Generators (DGs)
+% within a microgrid framework. It formulates and solves a series of Linear Matrix Inequalities
+% (LMIs) to ensure that each DG meets the required passivity conditions.
+
 function [DG, rhoTilde_i, nu_i, gammaTilde_i,statusDG] = designDGPassivity(DG, B_il, piVals)
 
 numOfDGs = size(B_il, 1);

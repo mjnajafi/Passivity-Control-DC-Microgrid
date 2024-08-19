@@ -1,3 +1,8 @@
+% This script simulates the control design for a microgrid consisting of
+% Distributed Generators (DGs) and transmission lines. It generates a 
+% microgrid topology, initializes parameters for DGs and lines, and 
+% evaluates control strategies based on a range of scalar values.
+
 clc;
 clear all; 
 close all;

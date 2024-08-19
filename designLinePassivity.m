@@ -1,3 +1,8 @@
+% This function designs the passivity parameters for multiple transmission lines
+% within a microgrid framework. It formulates and solves a series of Linear Matrix Inequalities
+% (LMIs) to ensure that each line meets the required passivity conditions based on its 
+% connection with Distributed Generators (DGs).
+
 function [Line, statusLine] = designLinePassivity(Line, DG, B_il, BarGamma, piVals,plVals,rhoTilde_i, nu_i)
 
 numOfLines = size(B_il, 2);

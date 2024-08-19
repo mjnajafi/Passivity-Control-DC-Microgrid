@@ -1,3 +1,9 @@
+% This function designs a centralized local control strategy for a microgrid
+% comprising multiple Distributed Generators (DGs) and transmission lines.
+% The function computes the passivity parameters (P, K, nu, rho, gamma) for
+% each DG and line by solving a series of Linear Matrix Inequalities (LMIs).
+% The goal is to ensure the stability and passivity of the entire system.
+
 function [DG,Line,statusLocalController] = centralizedLocalControlDesign(DG,Line,B_il,BarGamma,piVals,plVals)
 
 numOfDGs = size(B_il,1);

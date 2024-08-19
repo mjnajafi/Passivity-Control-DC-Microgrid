@@ -1,3 +1,8 @@
+% This Function optimizes the parameters for the local 
+% and global control designs of the microgrid. It utilizes the 
+% fmincon optimization function to find the optimal values that 
+% minimize a cost function while satisfying nonlinear constraints.
+
 function [piVals, plVals] = optimizeCodesignParameters()
 
 global DG Line B_il A_ij
