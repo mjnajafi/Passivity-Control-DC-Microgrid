@@ -210,7 +210,7 @@ Mat6 = [X_p_11, O_N, O_n', Q, X_p_11 * BarC, X_p_11;
         BarC' * X_p_11', O_bar, O', -BarC' * X_p_11' * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22, O_N';
         X_p_11, O_N, O_n', -X_p_11' * X_12, O_N, GammaTilde];
 
-T = Mat6;
+T = Mat4;
               
 con4 = T >= 0;
 constraints = [constraints, con4];
