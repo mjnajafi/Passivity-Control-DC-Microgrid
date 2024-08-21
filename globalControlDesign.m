@@ -279,11 +279,11 @@ statusGlobalController = sol.problem == 0;
 % T5Val = value(-Q' * X_12 - X_21 * Q);
 % T5ValEigs = eig(T5Val);
 
-T4_1Val = value(Mat4_1)
-T4_1ValEigs = eig(T4_1Val)
+T4_1Val = value(Mat4_1);
+T4_1ValEigs = eig(T4_1Val);
 
-P_iVal = value(P_i)
-P_lVal = value(P_l)
+P_iVal = value(P_i);
+P_lVal = value(P_l);
 
 
 

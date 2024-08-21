@@ -28,13 +28,14 @@ function [numOfDGs, threshold] = evaluateDesigns(numDGsRange, thresholdRange, Ba
             C0 = 0.0022;    % Capacitance
             RL0 = 0.3;      % Load Resistance
             Y0 = 1/RL0;     % Load Conductance
+            IL0 = 5;        % Constant Current Load
 
             % Initial parameter values for Lines
             Rl0 = 0.02;     % Line Resistance
             Ll0 = 0.01;     % Line Inductance
 
             for i = 1:numOfDGs
-                DG{i} = GenerateDG(R0, L0, C0, RL0, coords(i, :));
+                DG{i} = GenerateDG(R0, L0, C0, RL0, IL0, coords(i, :));
             end
 
             for l = 1:numOfLines
