@@ -105,4 +105,71 @@ function [coords, adjMatrix, B_il] = generateMicrogridTopology(numOfDGs, thresho
     disp(adjMatrix);
     disp('B_il Matrix:');
     disp(B_il);
+
+    %% Draw communication topology on top of the figure
+
 end
+
+
+
+% function outputArg = drawTopology(obj,figNum)
+%     figure(figNum); hold on;
+% 
+%     if ~isempty(obj.graphics1)
+%         delete(obj.graphics1);
+%         delete(obj.graphics2);
+%     end
+% 
+%     numOfLinks = length(obj.topology.startNodes);
+%     for i = 1:1:numOfLinks
+%         % Draw a link
+%         startVehicleIndex = obj.topology.startNodes(i);
+%         endVehicleIndex = obj.topology.endNodes(i);
+% 
+%         startPos = obj.vehicles(startVehicleIndex).states(1) - obj.vehicles(startVehicleIndex).vehicleParameters(2)/2;
+%         endPos = obj.vehicles(endVehicleIndex).states(1) - obj.vehicles(endVehicleIndex).vehicleParameters(2)/2;
+%         midPos = (startPos + endPos)/2;
+% 
+%         % midPointHeight = -5*sign(startPos-endPos)+0.05*abs(startPos-endPos)-0.5*(startPos<endPos); % 4
+%         % Simplify mid-point height calculation
+%         % Define baseline deviation ranges
+%         minBaselineDeviation = 1; % Minimum deviation from the baseline
+%         maxBaselineDeviation = 5; % Maximum deviation from the baseline
+%         % Calculate mid-point height deviation
+%         directionSign = sign(startPos - endPos);
+%         distance = abs(startPos - endPos);
+% 
+%         % Scale the deviation within the specified range
+%         deviationRange = maxBaselineDeviation - minBaselineDeviation;
+%         scaledDeviation = (deviationRange / 100) * distance + minBaselineDeviation;
+% 
+%          % Adjust mid-point height based on direction and vehicle height
+%         vehicleHeightCorrection = 1.5 * (startPos > endPos) * directionSign;
+%         midPointHeight = -directionSign * scaledDeviation + vehicleHeightCorrection;
+% 
+% 
+%         startPosY = obj.vehicles(startVehicleIndex).vehicleParameters(2)*3/8;
+%         endPosY = obj.vehicles(endVehicleIndex).vehicleParameters(2)*3/8;
+%         %obj.graphics(i) = plot([startPos,midPos,endPos],[startPosY,midPointHeight,endPosY],'-b');
+% 
+%         % Plotting the Spline
+%         x = [startPos,midPos,endPos];
+%         y = [startPosY,midPointHeight,endPosY];
+%         stepSize = (endPos-startPos)/20; 
+%         xx = startPos:stepSize:endPos;
+%         yy = spline(x,y,xx);
+%         obj.graphics1(i) = plot(xx,yy,'-b');
+% 
+%         % Plotting the arrowhead (polyshape)
+%         polyPosX = midPos;
+%         polyPosY = midPointHeight;
+%         polySize = 0.3;
+%         polyVertX = [-0.5, 1, -0.5];
+%         polyVertY = [0.5, 0, -0.5];
+%         if startPos > endPos
+%             polyVertX = -polyVertX;
+%         end
+%         arrowHead = polyshape(polyPosX + polySize * polyVertX, polyPosY + polySize * polyVertY);
+%         obj.graphics2(i) = plot(arrowHead, 'EdgeColor', 'k', 'FaceColor', 'b');
+%     end            
+% end

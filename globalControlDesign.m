@@ -210,10 +210,18 @@ Mat6 = [X_p_11, O_N, O_n', Q, X_p_11 * BarC, X_p_11;
         BarC' * X_p_11', O_bar, O', -BarC' * X_p_11' * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22, O_N';
         X_p_11, O_N, O_n', -X_p_11' * X_12, O_N, GammaTilde];
 
-T = Mat4;
-              
+Mat4_1 = [X_p_11, X_p_11 * BarC; 
+        BarC' * X_p_11', -BarX_Barp_22];
+
+
+% Mat4_1 = [-BarX_Barp_22];
+con4_1 = Mat4_1 >= 0;
+
+
+T = Mat4;            
 con4 = T >= 0;
-constraints = [constraints, con4];
+% constraints = [constraints, con4];
+constraints = [constraints, con4, con4_1];
 
 % Structural constraints
 con5 = Q.*(nullMatBlock==1) == O_3N;     % Structural limitations (due to the format of the control law)
@@ -253,23 +261,31 @@ statusGlobalController = sol.problem == 0;
 
 % Study the components of T (all the 1x1 and 2x2 blocks we considered in
 % Theorem 2 to find necessary conditions)
-TVal = value(T);
-TValEigs = eig(TVal);
+% TVal = value(T);
+% TValEigs = eig(TVal);
+% 
+% T1Val = value(X_p_11);
+% T1ValEigs = eig(T1Val);
+% 
+% T2Val = value(BarX_Barp_11);
+% T2ValEigs = eig(T2Val);
+% 
+% T3Val = value(-Q' * X_12 - X_21 * Q - X_p_22);
+% T3ValEigs = eig(T3Val);
+% 
+% T4Val = value(- X_p_22);
+% T4ValEigs = eig(T4Val);
+% 
+% T5Val = value(-Q' * X_12 - X_21 * Q);
+% T5ValEigs = eig(T5Val);
 
-T1Val = value(X_p_11);
-T1ValEigs = eig(T1Val);
+T4_1Val = value(Mat4_1)
+T4_1ValEigs = eig(T4_1Val)
 
-T2Val = value(BarX_Barp_11);
-T2ValEigs = eig(T2Val);
+P_iVal = value(P_i)
+P_lVal = value(P_l)
 
-T3Val = value(-Q' * X_12 - X_21 * Q - X_p_22);
-T3ValEigs = eig(T3Val);
 
-T4Val = value(- X_p_22);
-T4ValEigs = eig(T4Val);
-
-T5Val = value(-Q' * X_12 - X_21 * Q);
-T5ValEigs = eig(T5Val);
 
 gammaTildeVal = value(gammaTilde);
 QVal = value(Q);

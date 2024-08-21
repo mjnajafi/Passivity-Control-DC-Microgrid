@@ -98,7 +98,7 @@ for i = 1:1:numOfDGs
        
            % Constraint (66f)
            con7_1 = rho_l{l} >= 0; 
-           con7_2 = rho_l{l} <= -(p_i{i}*nu_i{i})/(p_l{l}*Ct^2);
+           con7_2 = rho_l{l} >= -(p_i{i}*nu_i{i})/(p_l{l}*Ct^2);
            con7_3 = rho_l{l} >= ((rhoTilde_i{i})/(p_i{i}*p_l{l}))*((p_i{i}/(2*Ct))-(p_l{l}/2))^2;
               
            
@@ -147,7 +147,7 @@ for i = 1:1:numOfDGs
                
                %%% Comment1: Check con7_1 and con7_2
                % constraints = [constraints, con7_1, con7_2, con7_3,con8];
-               constraints = [constraints, con7_2,con7_3];
+               constraints = [constraints, con7_1, con7_2, con7_3];
 
         end
     end
