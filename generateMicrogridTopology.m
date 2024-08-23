@@ -51,7 +51,8 @@ function [coords, adjMatrix, B_il] = generateMicrogridTopology(numOfDGs, thresho
         i = lines(l, 1);
         j = lines(l, 2);
         B_il(i, l) = 1; % DG i is an in-neighbor of line k
-        B_il(j, l) = -1; % DG l is an out-neighbor of line k
+        B_il(j, l) = -1;  % DG l is an out-neighbor of line k
+        
     end
 
     % Step 4: Plot the graph

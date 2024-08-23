@@ -24,16 +24,22 @@ function plotControlDesign(DG, Line, B_il, BarGamma, A_ij, isSoft, numOfDGs, num
             % Call the centralizedLocalControlDesign function
             [DG, Line, statusLocalController] = centralizedLocalControlDesign(DG, Line, B_il, BarGamma, piVals, plVals);
             
-            % Call the globalControlDesign function
-            [DG, Line, statusGlobalController, gammaTildeVal, K, C, BarC, H] = globalControlDesign(DG, Line, A_ij, B_il, BarGamma, isSoft);
-            
-            % Plot the result with a cross marker based on global controller status
-            if statusGlobalController == 1
-                % Blue cross for status 1
-                plot(log10(piScalar), log10(plScalar), 'bx', 'MarkerSize', 8, 'LineWidth', 1.5);
-            else
-                % Red small cross for status 0
-                plot(log10(piScalar), log10(plScalar), 'rx', 'MarkerSize', 5, 'LineWidth', 1);
+            try
+                % Call the globalControlDesign function
+                [DG, Line, statusGlobalController, gammaTildeVal, K, C, BarC, H] = globalControlDesign(DG, Line, A_ij, B_il, BarGamma, isSoft);
+                
+                % Plot the result with a cross marker based on global controller status
+                if statusGlobalController == 1
+                    % Blue cross for status 1
+                    plot(log10(piScalar), log10(plScalar), 'bx', 'MarkerSize', 8, 'LineWidth', 1.5);
+                else
+                    % Red small cross for status 0
+                    plot(log10(piScalar), log10(plScalar), 'rx', 'MarkerSize', 5, 'LineWidth', 1);
+                end
+            catch ME
+                % If an error occurs, display a warning and skip to the next iteration
+                warning('Error encountered with piScalar = %e and plScalar = %e: %s', piScalar, plScalar, ME.message);
+                continue;
             end
         end
     end
