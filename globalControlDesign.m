@@ -210,11 +210,11 @@ Mat6 = [X_p_11, O_N, O_n', Q, X_p_11 * BarC, X_p_11;
         BarC' * X_p_11', O_bar, O', -BarC' * X_p_11' * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22, O_N';
         X_p_11, O_N, O_n', -X_p_11' * X_12, O_N, GammaTilde];
 % 
-% Mat4_1 = [X_p_11, X_p_11 * BarC; 
-%         BarC' * X_p_11', -BarX_Barp_22];
-% 
-% 
-Mat4_1 = [-BarX_Barp_22];
+Mat4_1 = [X_p_11, X_p_11 * BarC; 
+        BarC' * X_p_11', -BarX_Barp_22];
+
+
+% Mat4_1 = [-BarX_Barp_22];
 con4_1 = Mat4_1 >= 0;
 
 
@@ -262,28 +262,32 @@ statusGlobalController = sol.problem == 0;
 % Study the components of T (all the 1x1 and 2x2 blocks we considered in
 % Theorem 2 to find necessary conditions)
 TVal = value(T);
-TValEigs = eig(TVal)
+TValEigs = eig(TVal);
 
 T1Val = value(X_p_11);
-T1ValEigs = eig(T1Val)
+T1ValEigs = eig(T1Val);
 
 T2Val = value(BarX_Barp_11);
-T2ValEigs = eig(T2Val)
+T2ValEigs = eig(T2Val);
 
 T3Val = value(-Q' * X_12 - X_21 * Q - X_p_22);
-T3ValEigs = eig(T3Val)
+T3ValEigs = eig(T3Val);
 
 T4Val = value(- X_p_22);
-T4ValEigs = eig(T4Val)
+T4ValEigs = eig(T4Val);
 
 T5Val = value(-Q' * X_12 - X_21 * Q);
-T5ValEigs = eig(T5Val)
+T5ValEigs = eig(T5Val);
 
-T4_1Val = value(Mat4_1)
-T4_1ValEigs = eig(T4_1Val)
+T4_1Val = value(Mat4_1);
+T4_1ValEigs = eig(T4_1Val);
 
-P_iVal = value(P_i);
-P_lVal = value(P_l);
+P_iVal = diag(value(P_i));
+P_lVal = diag(value(P_l));
+
+
+
+
 
 
 
@@ -294,7 +298,6 @@ KVal = X_p_11Val \ QVal;
 costFun0Val = value(costFun0);
 costFunVal = value(costFun);
 
-javab = value(-BarX_Barp_22)
 
 
 % Load KVal elements into a cell structure K{i,j} (i.e., partitioning KVal
