@@ -147,9 +147,9 @@ for i = 1:1:numOfDGs
                
                %%% Comment1: Check con7_1 and con7_2
                % constraints = [constraints, con7_1, con7_2, con7_3,con8];
-               % constraints = [constraints, con7_1, con7_2];
+               constraints = [constraints, con7_1, con7_2, con7_3];
 
-               constraints = [constraints, con7_2, con7_3];
+             
         end
     end
 end
