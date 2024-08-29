@@ -5,7 +5,7 @@
 % matrix A_ij. The function also computes the optimal gain matrices K for 
 % each pair of DGs based on the optimization results.
 
-function [DG,Line,statusGlobalController,gammaTildeVal,K,C,BarC,H] = globalControlDesign(DG,Line,A_ij,B_il,BarGamma,isSoft)
+function [DG,Line,statusGlobalController,gammaTildeVal,K,C,BarC,H,P_iVal,P_lVal] = globalControlDesign(DG,Line,A_ij,B_il,BarGamma,isSoft)
 
 numOfDGs = size(B_il,1);
 numOfLines = size(B_il,2);
@@ -90,15 +90,15 @@ GammaTilde = gammaTilde*I;
 
 Q = sdpvar(3*numOfDGs, 3*numOfDGs, 'full'); 
 
-P_i = sdpvar(numOfDGs, numOfDGs, 'diagonal');
-% for i = 1:numOfDGs
-%     P_i(i,i) = sdpvar(1, 1, 'full');
-% end
+% P_i = sdpvar(numOfDGs, numOfDGs, 'diagonal');
+for i = 1:numOfDGs
+    P_i(i,i) = sdpvar(1, 1, 'full');
+end
 
-P_l = sdpvar(numOfLines, numOfLines, 'diagonal');
-% for l = 1:numOfLines
-%     P_l(l,l) = sdpvar(1, 1,'full');
-% end
+% P_l = sdpvar(numOfLines, numOfLines, 'diagonal');
+for l = 1:numOfLines
+    P_l(l,l) = sdpvar(1, 1,'full');
+end
 
 
 I_n = eye(3);
@@ -209,19 +209,19 @@ Mat6 = [X_p_11, O_N, O_n', Q, X_p_11 * BarC, X_p_11;
         Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12, -X_21 * X_p_11;
         BarC' * X_p_11', O_bar, O', -BarC' * X_p_11' * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22, O_N';
         X_p_11, O_N, O_n', -X_p_11' * X_12, O_N, GammaTilde];
-% 
+
 Mat4_1 = [X_p_11, X_p_11 * BarC; 
         BarC' * X_p_11', -BarX_Barp_22];
-
-
-% Mat4_1 = [-BarX_Barp_22];
+% 
+% 
+% % Mat4_1 = [-BarX_Barp_22];
 con4_1 = Mat4_1 >= 0;
 
 
 T = Mat4;            
 con4 = T >= 0;
-% constraints = [constraints, con4];
-constraints = [constraints, con4, con4_1];
+constraints = [constraints, con4];
+% constraints = [constraints, con4, con4_1];
 
 % Structural constraints
 con5 = Q.*(nullMatBlock==1) == O_3N;     % Structural limitations (due to the format of the control law)
@@ -278,9 +278,9 @@ T4ValEigs = eig(T4Val);
 
 T5Val = value(-Q' * X_12 - X_21 * Q);
 T5ValEigs = eig(T5Val);
-
-T4_1Val = value(Mat4_1);
-T4_1ValEigs = eig(T4_1Val);
+% 
+% T4_1Val = value(Mat4_1);
+% T4_1ValEigs = eig(T4_1Val);
 
 P_iVal = diag(value(P_i));
 P_lVal = diag(value(P_l));
