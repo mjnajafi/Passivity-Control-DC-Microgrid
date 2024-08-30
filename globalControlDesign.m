@@ -90,15 +90,37 @@ GammaTilde = gammaTilde*I;
 
 Q = sdpvar(3*numOfDGs, 3*numOfDGs, 'full'); 
 
-% P_i = sdpvar(numOfDGs, numOfDGs, 'diagonal');
-for i = 1:numOfDGs
-    P_i(i,i) = sdpvar(1, 1, 'full');
-end
+P_i = sdpvar(numOfDGs, numOfDGs, 'diagonal');
+% for i = 1:numOfDGs
+%     P_i(i,i) = sdpvar(1, 1, 'full');
+% end
 
-% P_l = sdpvar(numOfLines, numOfLines, 'diagonal');
-for l = 1:numOfLines
-    P_l(l,l) = sdpvar(1, 1,'full');
-end
+
+P_l = sdpvar(numOfLines, numOfLines, 'diagonal');
+% for l = 1:numOfLines
+%     P_l(l,l) = sdpvar(1, 1,'full');
+% end
+
+% % Fixed Values
+% baseP_i = 1e-4;                              % Define the fixed value
+% P_i = zeros(numOfDGs); 
+% 
+% for i = 1:numOfDGs
+%     variation = baseP_i * (2 * rand() - 1) * 0.1; % Small variation
+%     P_i(i,i) = baseP_i + variation;                 % Set the value in the diagonal
+% end
+% 
+% 
+% baseP_l = 1e-4;                             % Define the base value for P_l
+% P_l = zeros(numOfLines); 
+% 
+% for l = 1:numOfLines
+%     variation = baseP_l * (2 * rand() - 1) * 0.1; % Small variation
+%     P_l(l,l) = baseP_l + variation;                 % Set the value in the diagonal
+% end
+% 
+
+
 
 
 I_n = eye(3);
@@ -220,8 +242,8 @@ con4_1 = Mat4_1 >= 0;
 
 T = Mat4;            
 con4 = T >= 0;
-constraints = [constraints, con4];
-% constraints = [constraints, con4, con4_1];
+% constraints = [constraints, con4];
+constraints = [constraints, con4, con4_1];
 
 % Structural constraints
 con5 = Q.*(nullMatBlock==1) == O_3N;     % Structural limitations (due to the format of the control law)
