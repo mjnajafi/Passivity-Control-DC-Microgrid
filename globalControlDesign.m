@@ -90,16 +90,16 @@ GammaTilde = gammaTilde*I;
 
 Q = sdpvar(3*numOfDGs, 3*numOfDGs, 'full'); 
 
-P_i = sdpvar(numOfDGs, numOfDGs, 'diagonal');
-% for i = 1:numOfDGs
-%     P_i(i,i) = sdpvar(1, 1, 'full');
-% end
+% P_i = sdpvar(numOfDGs, numOfDGs, 'diagonal');
+for i = 1:numOfDGs
+    P_i(i,i) = sdpvar(1, 1, 'full');
+end
 
 
-P_l = sdpvar(numOfLines, numOfLines, 'diagonal');
-% for l = 1:numOfLines
-%     P_l(l,l) = sdpvar(1, 1,'full');
-% end
+% P_l = sdpvar(numOfLines, numOfLines, 'diagonal');
+for l = 1:numOfLines
+    P_l(l,l) = sdpvar(1, 1,'full');
+end
 
 % % Fixed Values
 % baseP_i = 1e-4;                              % Define the fixed value
