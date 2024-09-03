@@ -67,8 +67,8 @@ function plotCombinedControlDesign(DG, Line, B_il, BarGamma, A_ij, isSoft, numOf
     warning off;
 
     % Define the correct range for piScalar and plScalar
-    piRange = 10.^(-5:1:5);  % Adjust the range as needed
-    plRange = 10.^(-5:1:5);  % Adjust the range as needed
+    piRange = 10.^(-5:0.5:0);  % Adjust the range as needed
+    plRange = 10.^(-5:0.5:0);  % Adjust the range as needed
 
     % Create a figure for the plot
     figure;

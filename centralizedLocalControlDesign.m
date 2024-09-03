@@ -34,8 +34,12 @@ for i = 1:1:numOfDGs
     Ai = DG{i}.A;
     Bi = DG{i}.B;
 
+    con0 = gammaTilde_i{i} >=0;
+
     % Constraint (66a-Part1)
     con1 = P_i{i} >= 0;
+
+    
     
     % Constraint (66b)
     DMat = rhoTilde_i{i} * eye(3);
@@ -60,7 +64,7 @@ for i = 1:1:numOfDGs
     con4_22 = rhoTilde_i{i} <= 4*gammaTilde_i{i}/p_i{i};
     
     % Collecting Constraints
-    constraints = [constraints, con1, con2, con3_1, con3_2, con4_1, con4_21, con4_22];
+    constraints = [constraints, con0, con1, con2, con3_1, con3_2, con4_1, con4_21, con4_22];
  end
 
 
@@ -100,54 +104,54 @@ for i = 1:1:numOfDGs
            con7_1 = rho_l{l} >= 0; 
            con7_2 = rho_l{l} >= -(p_i{i}*nu_i{i})/(p_l{l}*Ct^2);
            con7_3 = rho_l{l} >= ((rhoTilde_i{i})/(p_i{i}*p_l{l}))*((p_i{i}/(2*Ct))-(p_l{l}/2))^2;
-              
+
            
                 
            % Constraint (66g)
-           epsilon = 0.001; % Minimum value
+           epsilon = 0.01; % Minimum value
            n = 10;          % Number of intervals
            rho_min = epsilon;
            rho_max = min(p_i{i}, 4*BarGamma/p_i{i});
            delta_i = (rho_max - rho_min) / n;
            
            % 
-           % % % Initialize cell array to store individual constraints
-           % con8 = [];
-           % 
-           % % Loop over each k from 1 to n to create individual constraints
-           % tilde_rho_i_prev = rho_min;
-           % tilde_y_i_prev = -p_i{i} / (p_l{l} * tilde_rho_i_prev);
-           % 
-           % for k = 1:n
-           % 
-           %     % Compute tilde_rho_i^k
-           %     tilde_rho_i_k = rho_min + (k - 1) * delta_i;
-           % 
-           %     % Compute tilde_y_i^k
-           %     tilde_y_i_k = -p_i{i} / (p_l{l} * tilde_rho_i_k);
-           % 
-           %     % Compute m_k and c_k
-           %     m_k = (tilde_y_i_k - tilde_y_i_prev) / delta_i;
-           %     c_k = tilde_y_i_k - m_k * tilde_rho_i_k;
-           % 
-           %     % Define Constraint (66g)
-           %     con8_k = nu_l{l} >= m_k * rhoTilde_i{i} + c_k;
-           %     % 
-           %     con8 = [con8, con8_k];
-           % 
-           % 
-           %     % Compute tilde_rho_i^{k-1} and tilde_y_i^{k-1}
-           %     tilde_rho_i_prev = tilde_rho_i_k;
-           %     tilde_y_i_prev = tilde_y_i_k;
-           % 
-           % end
+           % % Initialize cell array to store individual constraints
+           con8 = [];
+
+           % Loop over each k from 1 to n to create individual constraints
+           tilde_rho_i_prev = rho_min;
+           tilde_y_i_prev = -p_i{i} / (p_l{l} * tilde_rho_i_prev);
+
+           for k = 1:n
+
+               % Compute tilde_rho_i^k
+               tilde_rho_i_k = rho_min + (k - 1) * delta_i;
+
+               % Compute tilde_y_i^k
+               tilde_y_i_k = -p_i{i} / (p_l{l} * tilde_rho_i_k);
+
+               % Compute m_k and c_k
+               m_k = (tilde_y_i_k - tilde_y_i_prev) / delta_i;
+               c_k = tilde_y_i_k - m_k * tilde_rho_i_k;
+
+               % Define Constraint (66g)
+               con8_k = nu_l{l} >= m_k * rhoTilde_i{i} + c_k;
+               % 
+               con8 = [con8, con8_k];
+
+
+               % Compute tilde_rho_i^{k-1} and tilde_y_i^{k-1}
+               tilde_rho_i_prev = tilde_rho_i_k;
+               tilde_y_i_prev = tilde_y_i_k;
+
+           end
 
                % Collecting Constraints
                
                
                %%% Comment1: Check con7_1 and con7_2
                % constraints = [constraints, con7_1, con7_2, con7_3, con8];
-               constraints = [constraints, con7_1, con7_2, con7_3];
+               constraints = [constraints, con7_1, con7_2, con7_3, con8];
 
              
         end
@@ -167,7 +171,7 @@ end
 % Defining costfunction
 costFunction = 1*costGamma; % Play with this choice
 
-solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0);
+solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1, 'debug', 1);
 
 sol = optimize(constraints, costFunction, solverOptions);
 

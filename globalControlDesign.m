@@ -90,18 +90,18 @@ GammaTilde = gammaTilde*I;
 
 Q = sdpvar(3*numOfDGs, 3*numOfDGs, 'full'); 
 
-% P_i = sdpvar(numOfDGs, numOfDGs, 'diagonal');
-for i = 1:numOfDGs
-    P_i(i,i) = sdpvar(1, 1, 'full');
-end
+P_i = sdpvar(numOfDGs, numOfDGs, 'diagonal');
+% for i = 1:numOfDGs
+%     P_i(i,i) = sdpvar(1, 1, 'full');
+% end
 
 
-% P_l = sdpvar(numOfLines, numOfLines, 'diagonal');
-for l = 1:numOfLines
-    P_l(l,l) = sdpvar(1, 1,'full');
-end
+P_l = sdpvar(numOfLines, numOfLines, 'diagonal');
+% for l = 1:numOfLines
+%     P_l(l,l) = sdpvar(1, 1,'full');
+% end
 
-% % Fixed Values
+% Fixed Values
 % baseP_i = 1e-4;                              % Define the fixed value
 % P_i = zeros(numOfDGs); 
 % 
@@ -118,7 +118,7 @@ end
 %     variation = baseP_l * (2 * rand() - 1) * 0.1; % Small variation
 %     P_l(l,l) = baseP_l + variation;                 % Set the value in the diagonal
 % end
-% 
+
 
 
 
@@ -273,7 +273,7 @@ end
 
 %% Solve the LMI problem (47)
 
-solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0);
+solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1, 'debug', 1);
 
 sol = optimize(constraints,costFun,solverOptions);
 
