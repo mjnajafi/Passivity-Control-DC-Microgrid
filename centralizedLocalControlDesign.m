@@ -116,42 +116,42 @@ for i = 1:1:numOfDGs
            
            % 
            % % Initialize cell array to store individual constraints
-           con8 = [];
-
-           % Loop over each k from 1 to n to create individual constraints
-           tilde_rho_i_prev = rho_min;
-           tilde_y_i_prev = -p_i{i} / (p_l{l} * tilde_rho_i_prev);
-
-           for k = 1:n
-
-               % Compute tilde_rho_i^k
-               tilde_rho_i_k = rho_min + (k - 1) * delta_i;
-
-               % Compute tilde_y_i^k
-               tilde_y_i_k = -p_i{i} / (p_l{l} * tilde_rho_i_k);
-
-               % Compute m_k and c_k
-               m_k = (tilde_y_i_k - tilde_y_i_prev) / delta_i;
-               c_k = tilde_y_i_k - m_k * tilde_rho_i_k;
-
-               % Define Constraint (66g)
-               con8_k = nu_l{l} >= m_k * rhoTilde_i{i} + c_k;
-               % 
-               con8 = [con8, con8_k];
-
-
-               % Compute tilde_rho_i^{k-1} and tilde_y_i^{k-1}
-               tilde_rho_i_prev = tilde_rho_i_k;
-               tilde_y_i_prev = tilde_y_i_k;
-
-           end
+           % con8 = [];
+           % 
+           % % Loop over each k from 1 to n to create individual constraints
+           % tilde_rho_i_prev = rho_min;
+           % tilde_y_i_prev = -p_i{i} / (p_l{l} * tilde_rho_i_prev);
+           % 
+           % for k = 1:n
+           % 
+           %     % Compute tilde_rho_i^k
+           %     tilde_rho_i_k = rho_min + (k - 1) * delta_i;
+           % 
+           %     % Compute tilde_y_i^k
+           %     tilde_y_i_k = -p_i{i} / (p_l{l} * tilde_rho_i_k);
+           % 
+           %     % Compute m_k and c_k
+           %     m_k = (tilde_y_i_k - tilde_y_i_prev) / delta_i;
+           %     c_k = tilde_y_i_k - m_k * tilde_rho_i_k;
+           % 
+           %     % Define Constraint (66g)
+           %     con8_k = nu_l{l} >= m_k * rhoTilde_i{i} + c_k;
+           %     % 
+           %     con8 = [con8, con8_k];
+           % 
+           % 
+           %     % Compute tilde_rho_i^{k-1} and tilde_y_i^{k-1}
+           %     tilde_rho_i_prev = tilde_rho_i_k;
+           %     tilde_y_i_prev = tilde_y_i_k;
+           % 
+           % end
 
                % Collecting Constraints
                
                
                %%% Comment1: Check con7_1 and con7_2
                % constraints = [constraints, con7_1, con7_2, con7_3, con8];
-               constraints = [constraints, con7_1, con7_2, con7_3, con8];
+               constraints = [constraints, con7_1, con7_2, con7_3];
 
              
         end

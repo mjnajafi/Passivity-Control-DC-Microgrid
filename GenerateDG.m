@@ -14,6 +14,9 @@ function DG = GenerateDG(R0,L0,C0,RL0,IL0,coords_i)
     RLi = RL0 + 0.01*rand();
     Yi = 1 / RLi;
     ILi = IL0 + 0.1*rand();
+
+   
+
     
     Ai = [-Yi/Ci, 1/Ci, 0;
                -1/Li, -Ri/Li, 0;
