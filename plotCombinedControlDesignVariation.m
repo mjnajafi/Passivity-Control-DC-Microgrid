@@ -15,18 +15,27 @@ function plotCombinedControlDesignVariation(DG0, Line0, B_il, BarGamma, A_ij, is
             P_DG = 10^P_DG_Range(i); % Convert back to original scale
             P_Line = 10^P_Line_Range(j); % Convert back to original scale
 
-          
+            % deltaP_DG = 10^(P_DG + step_size) - 10^(P_DG - step_size);
+            % deltaP_Line = 10^(P_Line + step_size) - 10^(P_Line - step_size);
+
+            % deltaP_DG = log10(10^(P_DG + step_size)) - log10(10^(P_DG - step_size));
+            % deltaP_Line = log10(10^(P_Line + step_size)) - log10(10^(P_Line - step_size));
+            % 
+            % 
+            % deltaP_DG = step_size * (10^(P_DG) * log10(10));
+            % deltaP_Line = step_size * (10^(P_Line) * log10(10));
+            % 
+            % deltaP_DG = step_size * log10(10) * 10^P_DG;  % Linear approximation
+            % deltaP_Line = step_size * log10(10) * 10^P_Line;  % Linear approximation
+
             % % Define linear delta values
-            deltaP_DG = step_size; % Linear change for P_DG
-            deltaP_Line = step_size; % Linear change for P_Line
+            % deltaP_DG = step_size; % Linear change for P_DG
+            % deltaP_Line = step_size; % Linear change for P_Line
 
-            piVals = P_DG + rand(1, numOfDGs) + 1/2 * deltaP_DG;
-            plVals = P_Line + rand(1, numOfLines) + 1/2 *  deltaP_Line;
-
-
+           
             % Define piVals and plVals with linear variations
-            % piVals = P_DG + deltaP_DG * rand(1, numOfDGs) - 1/2 * deltaP_DG;
-            % plVals = P_Line + deltaP_Line * rand(1, numOfLines) - 1/2 * deltaP_Line;
+            piVals = P_DG + deltaP_DG * rand(1, numOfDGs) - 1/2 * deltaP_DG;
+            plVals = P_Line + deltaP_Line * rand(1, numOfLines) - 1/2 * deltaP_Line;
 
             % Initialize the feasibility status structure
             feasibilityStatus.local = 0;
