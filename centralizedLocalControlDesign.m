@@ -79,6 +79,7 @@ for l = 1:1:numOfLines
     
     p_l{l} = plVals(l); %1/numOfLines;  % predefined value
 
+    
     % Constraint (66c)
     Z = [(2*P_l{l}*Rl)/Ll - rho_l{l}, -P_l{l}/Ll + 1/2;
          -P_l{l}/Ll + 1/2, -nu_l{l}];
@@ -108,7 +109,7 @@ for i = 1:1:numOfDGs
            
                 
            % Constraint (66g)
-           epsilon = 0.01; % Minimum value
+           epsilon = 0.001; % Minimum value
            n = 10;          % Number of intervals
            rho_min = epsilon;
            rho_max = min(p_i{i}, 4*BarGamma/p_i{i});
@@ -145,13 +146,15 @@ for i = 1:1:numOfDGs
            %     tilde_y_i_prev = tilde_y_i_k;
            % 
            % end
+           % Collecting Constraints
 
-               % Collecting Constraints
+
+           
                
                
                %%% Comment1: Check con7_1 and con7_2
-               % constraints = [constraints, con7_1, con7_2, con7_3, con8];
                constraints = [constraints, con7_1, con7_2, con7_3];
+               % constraints = [constraints, con7_1];
 
              
         end
