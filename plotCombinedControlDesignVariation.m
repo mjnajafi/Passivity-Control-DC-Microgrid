@@ -1,6 +1,6 @@
 function plotCombinedControlDesignVariation(DG0, Line0, B_il, BarGamma, A_ij, isSoft, numOfDGs, numOfLines)
     % Define the step size for linear variation
-    step_size = 2;
+    step_size = 1;
     P_DG_Range = -5:step_size:5; % Range for P_DG in linear scale
     P_Line_Range = -5:step_size:5; % Range for P_Line in linear scale
 
