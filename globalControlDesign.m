@@ -240,10 +240,10 @@ Mat4_1 = [X_p_11, X_p_11 * BarC;
 con4_1 = Mat4_1 >= 0;
 
 
-T = Mat6;            
+T = Mat4;            
 con4 = T >= 0;
-constraints = [constraints, con4];
-% constraints = [constraints, con4, con4_1];
+% constraints = [constraints, con4];
+constraints = [constraints, con4, con4_1];
 
 % Structural constraints
 con5 = Q.*(nullMatBlock==1) == O_3N;     % Structural limitations (due to the format of the control law)

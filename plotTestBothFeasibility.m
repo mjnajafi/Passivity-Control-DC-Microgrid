@@ -5,14 +5,14 @@ function plotTestBothFeasibility(DG, Line, B_il, BarGamma, A_ij, isSoft, numOfDG
     step_size = 0.5;
 
     % Define the correct range for piScalar and plScalar
-    piRange = 10.^(-5:step_size:5);  % Adjust the range as needed
-    plRange = 10.^(-5:step_size:5);  % Adjust the range as needed
+    piRange = 10.^(-5:step_size:0);  % Adjust the range as needed
+    plRange = 10.^(-5:step_size:0);  % Adjust the range as needed
 
     % Set the square size (length of each side of the square)
     squareSize = step_size;  % Adjust this size as needed
 
     % Number of random points to generate around each main point
-    numRandomPoints = 10;
+    numRandomPoints = 5;
 
     % Create a figure for the plot
     figure;
