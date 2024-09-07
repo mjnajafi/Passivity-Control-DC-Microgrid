@@ -4,8 +4,8 @@ function plotLocalControlDesign(DG, Line, B_il, BarGamma, numOfDGs, numOfLines)
     % Turn off all warnings
     warning off;
     % Define the correct range for piScalar and plScalar
-    piRange = 10.^(-20:1:20);  % 10^-15 to 10^0
-    plRange = 10.^(-20:1:20);  % 10^-15 to 10^0
+    piRange = 10.^(-10:1:10);  % 10^-15 to 10^0
+    plRange = 10.^(-10:1:10);  % 10^-15 to 10^0
 
     % Create a figure for the plot
     figure;

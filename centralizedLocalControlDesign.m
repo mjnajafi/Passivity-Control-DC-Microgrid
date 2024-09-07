@@ -28,6 +28,8 @@ for l = 1:1:numOfLines
 end
 
 constraints = [];
+constraintTags = {}; % Cell array to hold tags
+
 %% Combine constraints over all DGs (66a-Part1, 66b,66d,66e)
 
 for i = 1:1:numOfDGs
@@ -35,10 +37,14 @@ for i = 1:1:numOfDGs
     Ai = DG{i}.A;
     Bi = DG{i}.B;
 
-    con0 = gammaTilde_i{i} >=0;
+    tagName = ['gammaTilde_',num2str(i)];
+    constraintTags{end+1} = tagName;
+    con0 = tag(gammaTilde_i{i} >= 0, tagName);
 
     % Constraint (66a-Part1)
-    con1 = P_i{i} >= 0;
+    tagName = ['P_',num2str(i)];
+    constraintTags{end+1} = tagName;
+    con1 = tag(P_i{i} >= 0, tagName);
     
     % Constraint (66b)
     DMat = rhoTilde_i{i} * eye(3);
@@ -47,19 +53,34 @@ for i = 1:1:numOfDGs
                 -eye(3) + 0.5*P_i{i}, -nu_i{i}*eye(3)];
     W = [DMat, MMat; MMat', ThetaMat];
     
-    con2 = W >= 0;
+    tagName = ['W_',num2str(i)];
+    constraintTags{end+1} = tagName;
+    con2 = tag(W >= 0, tagName);
     
     % Constraint (66d)
     p_i{i} = piVals(i); % predefined value
-    
-    con3_1 = nu_i{i} >= -gammaTilde_i{i}/p_i{i};
-    con3_2 = nu_i{i} <= 0;
+
+    tagName = ['nu_',num2str(i),'_low'];
+    constraintTags{end+1} = tagName;
+    con3_1 = tag(nu_i{i} >= -gammaTilde_i{i}/p_i{i}, tagName);
+
+    tagName = ['nu_',num2str(i),'_high'];
+    constraintTags{end+1} = tagName;
+    con3_2 = tag(nu_i{i} <= 0, tagName);
     
 
     % Constraint (66e)
-    con4_1 = rhoTilde_i{i} >= 0;
-    con4_21 = rhoTilde_i{i} <= p_i{i};
-    con4_22 = rhoTilde_i{i} <= 4*gammaTilde_i{i}/p_i{i};
+    tagName = ['rhoTilde_',num2str(i),'_low'];
+    constraintTags{end+1} = tagName;
+    con4_1 = tag(rhoTilde_i{i} >= 0, tagName);
+
+    tagName = ['rhoTilde_',num2str(i),'_high1'];
+    constraintTags{end+1} = tagName;
+    con4_21 = tag(rhoTilde_i{i} <= p_i{i}, tagName);
+    
+    tagName = ['rhoTilde_',num2str(i),'_low'];
+    constraintTags{end+1} = tagName;
+    con4_22 = tag(rhoTilde_i{i} <= 4*gammaTilde_i{i}/p_i{i}, tagName);
 
     % New con8:
     % con4_31 = rho_i{i} >= 1/max(p_i{i}, 4*BarGamma/p_i{i});
@@ -79,19 +100,29 @@ for l = 1:1:numOfLines
     Ll = Line{l}.L;
     
     % Constraint (66a-Part2)
-    con5 = P_l{l} >= 0;
+
+    tagName = ['PBar_',num2str(l)];
+    constraintTags{end+1} = tagName;
+    con5 = tag(P_l{l} >= 0, tagName);
     
     p_l{l} = plVals(l); %1/numOfLines;  % predefined value
 
     
     % Constraint (66c)
-    Z = [(2*P_l{l}*Rl)/Ll - rho_l{l}, -P_l{l}/Ll + 1/2;
+    W = [(2*P_l{l}*Rl)/Ll - rho_l{l}, -P_l{l}/Ll + 1/2;
          -P_l{l}/Ll + 1/2, -nu_l{l}];
 
-    con6 = Z >= 0;
-     
-    con7_0 = nu_l{l} <= 0;
-    con7_1 = rho_l{l} >= 0;
+    tagName = ['WBar_',num2str(l)];
+    constraintTags{end+1} = tagName;
+    con6 = tag(W >= 0, tagName);
+    
+    tagName = ['nuBar_',num2str(l),'_high'];
+    constraintTags{end+1} = tagName;
+    con7_0 = tag(nu_l{l} <= 0, tagName);
+
+    tagName = ['rhoBar_',num2str(l),'low'];
+    constraintTags{end+1} = tagName;
+    con7_1 = tag(rho_l{l} >= 0, tagName);
 
     % Collecting Constraints
     constraints = [constraints, con5, con6, con7_0, con7_1];
@@ -109,10 +140,15 @@ for i = 1:1:numOfDGs
         if B_il(i,l) ~= 0
        
            % Constraint (66f)
-           con7_2 = rho_l{l} >= -(p_i{i}*nu_i{i})/(p_l{l}*Ct^2);
-           con7_3 = rho_l{l} >= ((rhoTilde_i{i})/(p_i{i}*p_l{l}))*((p_i{i}/(2*Ct))-(p_l{l}/2))^2;
+           tagName = ['rhoBar_',num2str(l),'_low1_',num2str(i)];
+           constraintTags{end+1} = tagName;
+           con7_2 = tag(rho_l{l} >= -(p_i{i}*nu_i{i})/(p_l{l}*Ct^2), tagName);
+           
+           tagName = ['rhoBar_',num2str(l),'_low2_',num2str(i)];
+           constraintTags{end+1} = tagName;
+           con7_3 = tag(rho_l{l} >= ((rhoTilde_i{i})/(p_i{i}*p_l{l}))*((p_i{i}/(2*Ct))-(p_l{l}/2))^2, tagName);
 
-           con7_2Test{i,l} = rho_l{l} + (p_i{i}*nu_i{i})/(p_l{l}*Ct^2);
+           % con7_2Test{i,l} = rho_l{l} + (p_i{i}*nu_i{i})/(p_l{l}*Ct^2);
                 
            % Constraint (66g)
            % epsilon = 0.001; % Minimum value
@@ -123,7 +159,7 @@ for i = 1:1:numOfDGs
 
            delta_i = (rho_max - rho_min) / n;
            
-           con8Test{i,l} = nu_l{l} +  p_i{i}/(rhoTilde_i{i}*p_l{l}); % This needs to be positive for the global controller to be feasible
+           % con8Test{i,l} = nu_l{l} +  p_i{i}/(rhoTilde_i{i}*p_l{l}); % This needs to be positive for the global controller to be feasible
 
            % Initialize cell array to store individual constraints
            con8 = [];
@@ -145,7 +181,10 @@ for i = 1:1:numOfDGs
                c_k = tilde_y_i_k - m_k * tilde_rho_i_k;
 
                % Define Constraint (66g)
-               con8_k = nu_l{l} >= m_k * rhoTilde_i{i} + c_k;
+               tagName = ['nuBar_',num2str(l),'_low',num2str(n),'_',num2str(i)];
+               constraintTags{end+1} = tagName;
+               con8_k = tag(nu_l{l} >= m_k * rhoTilde_i{i} + c_k, tagName);
+               
                con8 = [con8, con8_k];
                
                % Compute tilde_rho_i^{k-1} and tilde_y_i^{k-1}
@@ -159,8 +198,9 @@ for i = 1:1:numOfDGs
 
            % Collecting Constraints  
           % constraints = [constraints, con7_2];
-           constraints = [constraints, con7_2, con7_3];
-           % constraints = [constraints, con7_2, con7_3, con8];
+           % constraints = [constraints, con7_2, con7_3];
+           constraints = [constraints, con7_2, con7_3, con8];
+           % constraints = [constraints];
 
         end
     end
@@ -174,8 +214,8 @@ costGamma = 0;
 for  i = 1:numOfDGs
     % costGamma = costGamma + gammaTilde_i{i};
     % new con8
-    % stGamma = costGamma + (-nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i} - 1000*rho_i{i};
     costGamma = costGamma + (-nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i};
+    % costGamma = costGamma + (-nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i} - 1000*rho_i{i};
 end
 for l = 1:numOfLines
     costGamma = costGamma + (-nu_l{l}-rho_l{l});
@@ -189,6 +229,16 @@ solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0, 'debug', 0);
 sol = optimize(constraints, costFunction, solverOptions);
 
 statusLocalController = sol.problem == 0;
+
+%% Display violated constraints by tag
+% Check feasibility
+feasibility = check(constraints);
+% Display violated constraints by tag
+for i = 1:length(feasibility)
+    if feasibility(i) < -1e-6
+        disp(['Constraint "', constraintTags{i}, '" is violated by',num2str(feasibility(i)),' .']);
+    end
+end
 
 
 %% Extract variable values

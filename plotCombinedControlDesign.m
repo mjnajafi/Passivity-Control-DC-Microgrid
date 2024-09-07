@@ -67,8 +67,8 @@ function plotCombinedControlDesign(DG, Line, B_il, BarGamma, A_ij, isSoft, numOf
     warning off;
 
     % Define the correct range for piScalar and plScalar
-    piRange = 10.^(-5:0.5:0);  % Adjust the range as needed
-    plRange = 10.^(-5:0.5:0);  % Adjust the range as needed
+    piRange = 10.^(-10:1:10);  % Adjust the range as needed
+    plRange = 10.^(-10:1:10);  % Adjust the range as needed
 
     % Create a figure for the plot
     figure;
@@ -95,34 +95,33 @@ function plotCombinedControlDesign(DG, Line, B_il, BarGamma, A_ij, isSoft, numOf
             [DG, Line, statusLocalController] = centralizedLocalControlDesign(DG0, Line0, B_il, BarGamma, piVals, plVals);
             % if statusLocalController == 1
 
-                try
-                    % Call the globalControlDesign function
-                    [DG, Line, statusGlobalController, gammaTildeVal, K, C, BarC, H,P_iVal,P_lVal] = globalControlDesign(DG, Line, A_ij, B_il, BarGamma, isSoft);
-                    P_iVal;
-                    P_lVal;
-                    % Plot the result based on the combined status
-                    if statusLocalController == 1
-                        % Blue cross for local controller status 1
-                        plot(log10(piScalar), log10(plScalar), 'bx', 'MarkerSize', 8, 'LineWidth', 1.5);
-                    else 
-                        % Red cross if local controller status is 0
-                        plot(log10(piScalar), log10(plScalar), 'rx', 'MarkerSize', 8, 'LineWidth', 1.5);
-                    end
-    
-                    if statusGlobalController == 1
-                        
-                        % Blue circle if global controller status is 1
-                        plot(log10(piScalar), log10(plScalar), 'bo', 'MarkerSize', 8, 'LineWidth', 1.5);
-                        % plot(log10(mean(P_iVal)), log10(mean(P_lVal)), 'b*', 'MarkerSize', 8, 'LineWidth', 1.5);
-                    else
-                        % Red circle if global controller status is 0
-                        plot(log10(piScalar), log10(plScalar), 'ro', 'MarkerSize', 8, 'LineWidth', 1.5);
-                        % plot(log10(mean(P_iVal)), log10(mean(P_lVal)), 'r*', 'MarkerSize', 8, 'LineWidth', 1.5);
-                    end
-                catch ME
-                    % If an error occurs, skip to the next iteration
-                    continue;
+            % Plot the result based on the combined status
+            if statusLocalController == 1
+                % Blue cross for local controller status 1
+                plot(log10(piScalar), log10(plScalar), 'bx', 'MarkerSize', 8, 'LineWidth', 1.5);
+            else 
+                % Red cross if local controller status is 0
+                plot(log10(piScalar), log10(plScalar), 'rx', 'MarkerSize', 8, 'LineWidth', 1.5);
+            end
+
+            try
+                % Call the globalControlDesign function
+                [~,~, statusGlobalController, ~,~,~,~,~,~,~] = globalControlDesign(DG, Line, A_ij, B_il, BarGamma, isSoft);
+                
+                if statusGlobalController == 1
+                    
+                    % Blue circle if global controller status is 1
+                    plot(log10(piScalar), log10(plScalar), 'bo', 'MarkerSize', 8, 'LineWidth', 1.5);
+                    % plot(log10(mean(P_iVal)), log10(mean(P_lVal)), 'b*', 'MarkerSize', 8, 'LineWidth', 1.5);
+                else
+                    % Red circle if global controller status is 0
+                    plot(log10(piScalar), log10(plScalar), 'ro', 'MarkerSize', 8, 'LineWidth', 1.5);
+                    % plot(log10(mean(P_iVal)), log10(mean(P_lVal)), 'r*', 'MarkerSize', 8, 'LineWidth', 1.5);
                 end
+            catch ME
+                % If an error occurs, skip to the next iteration
+                continue;
+            end
             % end
         end
     end
