@@ -234,16 +234,18 @@ Mat6 = [X_p_11, O_N, O_n', Q, X_p_11 * BarC, X_p_11;
 
 Mat4_1 = [X_p_11, X_p_11 * BarC; 
         BarC' * X_p_11', -BarX_Barp_22];
-% 
-% 
-% % Mat4_1 = [-BarX_Barp_22];
-con4_1 = Mat4_1 >= 0;
+% Mat4_1 = [-BarX_Barp_22];
+
+% con4_1 = Mat4_1 >= 0;
+% constraints = [constraints, con4_1];
 
 
-T = Mat4;            
-con4 = T >= 0;
-% constraints = [constraints, con4];
-constraints = [constraints, con4, con4_1];
+con4 = Mat6 >= 0;
+constraints = [constraints, con4];
+
+
+% constraints = [constraints, con4, con4_1];
+
 
 % Structural constraints
 con5 = Q.*(nullMatBlock==1) == O_3N;     % Structural limitations (due to the format of the control law)
@@ -273,7 +275,7 @@ end
 
 %% Solve the LMI problem (47)
 
-solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1, 'debug', 1);
+solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0, 'debug', 0);
 
 sol = optimize(constraints,costFun,solverOptions);
 
@@ -283,23 +285,23 @@ statusGlobalController = sol.problem == 0;
 
 % Study the components of T (all the 1x1 and 2x2 blocks we considered in
 % Theorem 2 to find necessary conditions)
-TVal = value(T);
-TValEigs = eig(TVal);
-
-T1Val = value(X_p_11);
-T1ValEigs = eig(T1Val);
-
-T2Val = value(BarX_Barp_11);
-T2ValEigs = eig(T2Val);
-
-T3Val = value(-Q' * X_12 - X_21 * Q - X_p_22);
-T3ValEigs = eig(T3Val);
-
-T4Val = value(- X_p_22);
-T4ValEigs = eig(T4Val);
-
-T5Val = value(-Q' * X_12 - X_21 * Q);
-T5ValEigs = eig(T5Val);
+% TVal = value(T);
+% TValEigs = eig(TVal);
+% 
+% T1Val = value(X_p_11);
+% T1ValEigs = eig(T1Val);
+% 
+% T2Val = value(BarX_Barp_11);
+% T2ValEigs = eig(T2Val);
+% 
+% T3Val = value(-Q' * X_12 - X_21 * Q - X_p_22);
+% T3ValEigs = eig(T3Val);
+% 
+% T4Val = value(- X_p_22);
+% T4ValEigs = eig(T4Val);
+% 
+% T5Val = value(-Q' * X_12 - X_21 * Q);
+% T5ValEigs = eig(T5Val);
 % 
 % T4_1Val = value(Mat4_1);
 % T4_1ValEigs = eig(T4_1Val);

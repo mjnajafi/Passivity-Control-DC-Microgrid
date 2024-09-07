@@ -15,6 +15,7 @@ for i = 1:1:numOfDGs
     P_i{i} = sdpvar(3, 3, 'symmetric');
     K_i{i} = sdpvar(1, 3, 'full');
     nu_i{i} = sdpvar(1, 1, 'full');
+    rho_i{i} = sdpvar(1, 1, 'full'); % Representing: rho
     rhoTilde_i{i} = sdpvar(1, 1, 'full'); % Representing: 1/rho
     gammaTilde_i{i} = sdpvar(1, 1,'full');
 end
@@ -38,8 +39,6 @@ for i = 1:1:numOfDGs
 
     % Constraint (66a-Part1)
     con1 = P_i{i} >= 0;
-
-    
     
     % Constraint (66b)
     DMat = rhoTilde_i{i} * eye(3);
@@ -53,18 +52,23 @@ for i = 1:1:numOfDGs
     % Constraint (66d)
     p_i{i} = piVals(i); % predefined value
     
-    con3_1 = -gammaTilde_i{i}/p_i{i} <= nu_i{i};
+    con3_1 = nu_i{i} >= -gammaTilde_i{i}/p_i{i};
     con3_2 = nu_i{i} <= 0;
     
 
     % Constraint (66e)
-    con4_1 = 0 <= rhoTilde_i{i};
-
+    con4_1 = rhoTilde_i{i} >= 0;
     con4_21 = rhoTilde_i{i} <= p_i{i};
     con4_22 = rhoTilde_i{i} <= 4*gammaTilde_i{i}/p_i{i};
+
+    % New con8:
+    % con4_31 = rho_i{i} >= 1/max(p_i{i}, 4*BarGamma/p_i{i});
+    % con4_32 = rho_i{i} <= 100; %1/epsilon)
+    % con4_33 = [rho_i{i}, 1; 1, rhoTilde_i{i}] >= 0;
     
     % Collecting Constraints
     constraints = [constraints, con0, con1, con2, con3_1, con3_2, con4_1, con4_21, con4_22];
+    % constraints = [constraints, con0, con1, con2, con3_1, con3_2, con4_1, con4_21, con4_22, con4_31, con4_32, con4_33];
  end
 
 
@@ -108,18 +112,18 @@ for i = 1:1:numOfDGs
            con7_2 = rho_l{l} >= -(p_i{i}*nu_i{i})/(p_l{l}*Ct^2);
            con7_3 = rho_l{l} >= ((rhoTilde_i{i})/(p_i{i}*p_l{l}))*((p_i{i}/(2*Ct))-(p_l{l}/2))^2;
 
-           
+           con7_2Test{i,l} = rho_l{l} + (p_i{i}*nu_i{i})/(p_l{l}*Ct^2);
                 
            % Constraint (66g)
-           epsilon = 0.001; % Minimum value
-           n = 10;          % Number of intervals
-           rho_min = epsilon;
+           % epsilon = 0.001; % Minimum value
+           n = 1;          % Number of intervals
+           % rho_min = epsilon;
            rho_max = min(p_i{i}, 4*BarGamma/p_i{i});
+           rho_min = rho_max/1000;
+
            delta_i = (rho_max - rho_min) / n;
            
-
            con8Test{i,l} = nu_l{l} +  p_i{i}/(rhoTilde_i{i}*p_l{l}); % This needs to be positive for the global controller to be feasible
-
 
            % Initialize cell array to store individual constraints
            con8 = [];
@@ -127,11 +131,11 @@ for i = 1:1:numOfDGs
            % Loop over each k from 1 to n to create individual constraints
            tilde_rho_i_prev = rho_min;
            tilde_y_i_prev = -p_i{i} / (p_l{l} * tilde_rho_i_prev);
-
+            
            for k = 1:n
 
                % Compute tilde_rho_i^k
-               tilde_rho_i_k = rho_min + (k - 1) * delta_i;
+               tilde_rho_i_k = rho_min + k * delta_i;
 
                % Compute tilde_y_i^k
                tilde_y_i_k = -p_i{i} / (p_l{l} * tilde_rho_i_k);
@@ -141,28 +145,23 @@ for i = 1:1:numOfDGs
                c_k = tilde_y_i_k - m_k * tilde_rho_i_k;
 
                % Define Constraint (66g)
-               if ~isnan(m_k)
-                    con8_k = nu_l{l} >= m_k * rhoTilde_i{i} + c_k;
-                    con8 = [con8, con8_k];
-               else
-                   i
-                   l
-                   k
-                    delta_i
-                    m_k
-               end
-
-
+               con8_k = nu_l{l} >= m_k * rhoTilde_i{i} + c_k;
+               con8 = [con8, con8_k];
+               
                % Compute tilde_rho_i^{k-1} and tilde_y_i^{k-1}
                tilde_rho_i_prev = tilde_rho_i_k;
                tilde_y_i_prev = tilde_y_i_k;
 
            end
-           % Collecting Constraints  
-               
-           constraints = [constraints, con7_2, con7_3, con8];
 
-             
+           %  % New con8:
+           % con8 = nu_l{l} >= -p_i{i}*rho_i{i}/p_l{l};
+
+           % Collecting Constraints  
+          % constraints = [constraints, con7_2];
+           constraints = [constraints, con7_2, con7_3];
+           % constraints = [constraints, con7_2, con7_3, con8];
+
         end
     end
 end
@@ -174,13 +173,18 @@ end
 costGamma = 0;
 for  i = 1:numOfDGs
     % costGamma = costGamma + gammaTilde_i{i};
+    % new con8
+    % stGamma = costGamma + (-nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i} - 1000*rho_i{i};
     costGamma = costGamma + (-nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i};
+end
+for l = 1:numOfLines
+    costGamma = costGamma + (-nu_l{l}-rho_l{l});
 end
 
 % Defining costfunction
 costFunction = 1*costGamma; % Play with this choice
 
-solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1, 'debug', 1);
+solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0, 'debug', 0);
 
 sol = optimize(constraints, costFunction, solverOptions);
 
@@ -215,12 +219,23 @@ for l = 1:1:numOfLines
     Line{l}.rho = rho_lVal;
 end
 
-for i = 1:1:numOfDGs
-    for l = 1:1:numOfLines
-        con8_il = value(con8Test{i,l});
-        disp(['Con 8_',num2str(i),num2str(l),'=',num2str(con8_il)])
-    end
-end
+% for i = 1:1:numOfDGs
+%     for l = 1:1:numOfLines
+%         if B_il(i,l) ~= 0
+%             con7_2_il = value(con7_2Test{i,l});
+%             disp(['Con 7_2_',num2str(i),num2str(l),'=',num2str(con7_2_il)])
+%         end
+%     end
+% end
+% 
+% for i = 1:1:numOfDGs
+%     for l = 1:1:numOfLines
+%         if B_il(i,l) ~= 0
+%             con8_il = value(con8Test{i,l});
+%             disp(['Con 8_',num2str(i),num2str(l),'=',num2str(con8_il)])
+%         end
+%     end
+% end
 
 
 
