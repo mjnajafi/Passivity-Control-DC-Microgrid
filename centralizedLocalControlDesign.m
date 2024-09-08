@@ -95,24 +95,24 @@ for i = 1:1:numOfDGs
     constraintMats{end+1} = 4*gammaTilde_i{i}/p_i{i};
 
     % New con8:
-    % tagName = ['rho_',num2str(i),'_low'];
-    % constraintTags{end+1} = tagName;
-    % con4_31 = tag(rho_i{i} >= 1/max(p_i{i}, 4*BarGamma/p_i{i}), tagName);
-    % constraintMats{end+1} = 1/max(p_i{i}, 4*BarGamma/p_i{i});
-    % 
-    % tagName = ['rho_',num2str(i),'_high'];
-    % constraintTags{end+1} = tagName;
-    % con4_32 = tag(rho_i{i} <= 1/epsilon, tagName);
-    % constraintMats{end+1} = rho_i{i};
-    % 
-    % tagName = ['rho_',num2str(i),'_receprocity'];
-    % constraintTags{end+1} = tagName;
-    % con4_33 = tag([rho_i{i}, 1; 1, rhoTilde_i{i}] >= 0, tagName);
-    % constraintMats{end+1} = [rho_i{i}, 1; 1, rhoTilde_i{i}];
+    tagName = ['rho_',num2str(i),'_low'];
+    constraintTags{end+1} = tagName;
+    con4_31 = tag(rho_i{i} >= 1/max(p_i{i}, 4*BarGamma/p_i{i}), tagName);
+    constraintMats{end+1} = 1/max(p_i{i}, 4*BarGamma/p_i{i});
+
+    tagName = ['rho_',num2str(i),'_high'];
+    constraintTags{end+1} = tagName;
+    con4_32 = tag(rho_i{i} <= 1/epsilon, tagName);
+    constraintMats{end+1} = rho_i{i};
+
+    tagName = ['rho_',num2str(i),'_receprocity'];
+    constraintTags{end+1} = tagName;
+    con4_33 = tag([rho_i{i}, 1; 1, rhoTilde_i{i}] >= 0, tagName);
+    constraintMats{end+1} = [rho_i{i}, 1; 1, rhoTilde_i{i}];
 
     % Collecting Constraints
-    constraints = [constraints, con0, con1, con2, con3_1, con3_2, con4_1, con4_21, con4_22];
-    % constraints = [constraints, con0, con1, con2, con3_1, con3_2, con4_1, con4_21, con4_22, con4_31, con4_32, con4_33];
+    % constraints = [constraints, con0, con1, con2, con3_1, con3_2, con4_1, con4_21, con4_22];
+    constraints = [constraints, con0, con1, con2, con3_1, con3_2, con4_1, con4_21, con4_22, con4_31, con4_32, con4_33];
  end
 
 
@@ -206,12 +206,12 @@ for i = 1:1:numOfDGs
                c_k = tilde_y_i_k - m_k * tilde_rho_i_k;
 
                % Define Constraint (66g)
-               tagName = ['nuBar_',num2str(l),'_low',num2str(n),'_',num2str(i)];
-               constraintTags{end+1} = tagName;
-               con8_k = tag(nu_l{l} >= m_k * rhoTilde_i{i} + c_k, tagName);
-               constraintMats{end+1} = m_k * rhoTilde_i{i} + c_k;
-               
-               con8 = [con8, con8_k];
+               % tagName = ['nuBar_',num2str(l),'_low',num2str(n),'_',num2str(i)];
+               % constraintTags{end+1} = tagName;
+               % con8_k = tag(nu_l{l} >= m_k * rhoTilde_i{i} + c_k, tagName);
+               % constraintMats{end+1} = m_k * rhoTilde_i{i} + c_k;
+               % 
+               % con8 = [con8, con8_k];
                
                % Compute tilde_rho_i^{k-1} and tilde_y_i^{k-1}
                tilde_rho_i_prev = tilde_rho_i_k;
@@ -220,17 +220,17 @@ for i = 1:1:numOfDGs
            end
 
            % New con8 (66g):
-           % tagName = ['nuBar_',num2str(l),'_low_',num2str(i)];
-           % constraintTags{end+1} = tagName;
-           % con8New = nu_l{l} >= -p_i{i}*rho_i{i}/p_l{l};
-           % constraintMats{end+1} = -p_i{i}*rho_i{i}/p_l{l};
+           tagName = ['nuBar_',num2str(l),'_low_',num2str(i)];
+           constraintTags{end+1} = tagName;
+           con8New = nu_l{l} >= -p_i{i}*rho_i{i}/p_l{l};
+           constraintMats{end+1} = -p_i{i}*rho_i{i}/p_l{l};
 
            % Collecting Constraints  
            % constraints = [constraints];
           % constraints = [constraints, con7_2];
            % constraints = [constraints, con7_2, con7_3];
-           constraints = [constraints, con7_2, con7_3, con8];
-           % constraints = [constraints, con7_2, con7_3, con8New];
+           % constraints = [constraints, con7_2, con7_3, con8];
+           constraints = [constraints, con7_2, con7_3, con8New];
            
 
         end
@@ -243,10 +243,10 @@ end
 
 costGamma = 0;
 for  i = 1:numOfDGs
-    costGamma = costGamma + (-nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i} + trace(P_i{i});
+    % costGamma = costGamma + (-nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i} + trace(P_i{i});
     
     % new con8
-    % costGamma = costGamma + (-nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i} + trace(P_i{i}) - 1000*rho_i{i};
+    costGamma = costGamma + (-nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i} + trace(P_i{i}) - 1000*rho_i{i};
 end
 for l = 1:numOfLines
     costGamma = costGamma + (-nu_l{l}-rho_l{l}) + trace(P_l{l});

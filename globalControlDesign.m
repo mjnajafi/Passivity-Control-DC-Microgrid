@@ -366,7 +366,7 @@ end
 
 
 %% Debugging
-debugMode = 1;
+debugMode = 0;
 if debugMode
 
     feasibility = check(constraints);
@@ -409,8 +409,8 @@ if debugMode
     % Mat_33Eigs = eig(Mat_33Val)
     Mat_3Eigs = eig(value(Mat_3))
     % 
-    % Mat_44Val = value(Mat_44);
-    % Mat_44Eigs = eig(Mat_44Val)
+    Mat_44Val = value(Mat_44);
+    Mat_44Eigs = eig(Mat_44Val)
     Mat_4Eigs = eig(value(Mat_4))
     % 
     % Mat_55Val = value(Mat_55);
