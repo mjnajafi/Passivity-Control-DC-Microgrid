@@ -10,6 +10,7 @@ function [DG,Line,statusGlobalController,gammaTildeVal,K,C,BarC,H,P_iVal,P_lVal]
 numOfDGs = size(B_il,1);
 numOfLines = size(B_il,2);
 epsilon = 0.000000001; % Minimum value
+debugMode = 1;
 
 %% Creating C , BarC , and H Matrices
 
@@ -292,6 +293,18 @@ con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
 constraintMats{end+1} = W_Temp;
 constraints = [constraints, con4_Temp];
 
+% Temporary - 4:
+W_Temp = Mat_5_Test2;
+tagName = ['W_Temp_4'];
+constraintTags{end+1} = tagName;
+con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
+constraintMats{end+1} = W_Temp;
+constraints = [constraints, con4_Temp];
+
+% 49g and h (Mat_5_Test1 & 2) conflicts 49e (Mat_4_test1 & 2)
+
+
+
 
 % Structural constraints
 tagName = ['Q_Structure'];
@@ -404,7 +417,7 @@ end
 
 
 %% Debugging
-debugMode = 1;
+
 if debugMode
 
     feasibility = check(constraints);
@@ -470,8 +483,11 @@ if debugMode
     % 
     
     Mat_6Eigs = eig(value(Mat_6))
-    % Mat_66Val = value(Mat_66);
-    % Mat_66Eigs = eig(Mat_66Val)
+    Mat_66Val = value(Mat_66);
+    Mat_66Eigs = eig(Mat_66Val)
+    Mat_6_Test1Eigs = eig(value(Mat_6_Test1))
+    Mat_6_Test2Eigs = eig(value(Mat_6_Test2))
+
 
 end
 end
