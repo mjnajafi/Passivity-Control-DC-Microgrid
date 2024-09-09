@@ -89,7 +89,7 @@ for i = 1:1:numOfDGs
     con4_21 = tag(rhoTilde_i{i} <= p_i{i}, tagName);
     constraintMats{end+1} = p_i{i};
     
-    tagName = ['rhoTilde_',num2str(i),'_low'];
+    tagName = ['rhoTilde_',num2str(i),'_high2'];
     constraintTags{end+1} = tagName;
     con4_22 = tag(rhoTilde_i{i} <= 4*gammaTilde_i{i}/p_i{i}, tagName);
     constraintMats{end+1} = 4*gammaTilde_i{i}/p_i{i};
@@ -246,7 +246,7 @@ for  i = 1:numOfDGs
     % costGamma = costGamma + (-nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i} + trace(P_i{i});
     
     % new con8
-    costGamma = costGamma + (-nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i} + trace(P_i{i}) - 1000*rho_i{i};
+    costGamma = costGamma + (-nu_i{i}+rhoTilde_i{i}) + 1*gammaTilde_i{i} + trace(P_i{i}) - 1000*rho_i{i};
 end
 for l = 1:numOfLines
     costGamma = costGamma + (-nu_l{l}-rho_l{l}) + trace(P_l{l});

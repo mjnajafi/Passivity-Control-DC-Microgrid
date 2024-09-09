@@ -43,7 +43,11 @@ for i = 1:numOfDGs
     H = blkdiag(H, H_i);
 end
 
-
+% GammaMat
+GammaMat = [];
+for i = 1:numOfDGs
+    GammaMat = blkdiag(GammaMat, DG{i}.gammaTilde0);
+end
 
 
 %% Creating the adjacency matrix, null matrix, and cost matrix
@@ -218,6 +222,13 @@ Mat_14 = [  Q;
 Mat_4 = [Mat_3, Mat_14;
         Mat_14', Mat_44];
 
+Mat_4_Test1 = [ Mat_11, Q;
+                Q', Mat_44];
+Mat_4_Test2 = [ Mat_22, BarX_Barp_11 * C;
+                (BarX_Barp_11 * C)', Mat_44];
+Mat_4_Test3 = [ Mat_33, H;
+                H', Mat_44];
+
 
 Mat_55 =  -BarX_Barp_22;
 Mat_15 = [  X_p_11 * BarC;
@@ -237,19 +248,9 @@ Mat_6 = [Mat_5, Mat_16;
         Mat_16', Mat_66];
 
 
-% Mat4_1 = [X_p_11, X_p_11 * BarC; 
-%         BarC' * X_p_11', -BarX_Barp_22];
-
-% tagName = ['W_4'];
-% constraintTags{end+1} = tagName;
-% con4_1 = tag(Mat4_1 >= epsilon*eye(size(Mat4_1)), tagName);
-% constraintMats{end+1} = Mat4_1;
-% constraints = [constraints, con4_1];
-
-
 tagName = ['W'];
 constraintTags{end+1} = tagName;
-con4 = tag(Mat_6 >= epsilon*eye(size(Mat_6)), tagName);
+con4 = tag(Mat_5 >= epsilon*eye(size(Mat_5)), tagName);
 constraintMats{end+1} = Mat_6;
 
 constraints = [constraints, con4];
@@ -288,7 +289,7 @@ costFun0 = 1*norm(Q.*costMatBlock,normType);
 
 
 % Total Cost Function
-costFun = 1*costFun0 + 1*gammaTilde; % soft %%% Play with this
+costFun = 1*costFun0 + 1*gammaTilde + 1000*(gammaTilde-mean(diag(GammaMat)))^2; % soft %%% Play with this
 
 
 
@@ -396,30 +397,42 @@ if debugMode
 
     % costFun0Val = value(costFun0)
     % costFunVal = value(costFun)
-    % 
+    
+    Mat_1Eigs = eig(value(Mat_1))
     % Mat_11Val = value(Mat_11);
     % Mat_11Eigs = eig(Mat_11Val)
-    Mat_1Eigs = eig(value(Mat_1))
     % 
+    
+    Mat_2Eigs = eig(value(Mat_2))
     % Mat_22Val = value(Mat_22);
     % Mat_22Eigs = eig(Mat_22Val)
-    Mat_2Eigs = eig(value(Mat_2))
     % 
+    
+    Mat_3Eigs = eig(value(Mat_3))
     % Mat_33Val = value(Mat_33);
     % Mat_33Eigs = eig(Mat_33Val)
-    Mat_3Eigs = eig(value(Mat_3))
     % 
+    
+    Mat_4Eigs = eig(value(Mat_4))
     Mat_44Val = value(Mat_44);
     Mat_44Eigs = eig(Mat_44Val)
-    Mat_4Eigs = eig(value(Mat_4))
+    Mat_4_Test1Eigs = eig(value(Mat_4_Test1))
+    Mat_4_Test2Eigs = eig(value(Mat_4_Test2))
+    Mat_4_Test3Eigs = eig(value(Mat_4_Test3))
+    value(P_i)
+    value(P_l)
+    GammaMat
+    value(gammaTilde)
     % 
+    
+    Mat_5Eigs = eig(value(Mat_5))
     % Mat_55Val = value(Mat_55);
     % Mat_55Eigs = eig(Mat_55Val)
-    Mat_5Eigs = eig(value(Mat_5))
     % 
+    
+    Mat_6Eigs = eig(value(Mat_6))
     % Mat_66Val = value(Mat_66);
     % Mat_66Eigs = eig(Mat_66Val)
-    Mat_6Eigs = eig(value(Mat_6))
 
 end
 end
