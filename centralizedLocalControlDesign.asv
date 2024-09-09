@@ -117,7 +117,7 @@ for i = 1:1:numOfDGs
            epsilon = 0.001; % Minimum value
            n = 10;          % Number of intervals
            rho_min = epsilon;
-           rho_max = min(p_i{i}, 4*BarGamma/p_i{i});
+           rho_max = min(p_i{i}, 4*BarGamma/p_i{i})
            delta_i = (rho_max - rho_min) / n;
            
 

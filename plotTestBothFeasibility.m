@@ -12,7 +12,7 @@ function plotTestBothFeasibility(DG, Line, B_il, BarGamma, A_ij, isSoft, numOfDG
     squareSize = step_size;  % Adjust this size as needed
 
     % Number of random points to generate around each main point
-    numRandomPoints = 5;
+    numRandomPoints = 1;
 
     % Create a figure for the plot
     figure;
@@ -83,22 +83,22 @@ function plotTestBothFeasibility(DG, Line, B_il, BarGamma, A_ij, isSoft, numOfDG
                 for k = 1:numRandomPoints
 
                     % % Generate random piVals and plVals within the square area
-                    % randomLogPi = logPiScalar + (rand() - 0.5) * squareSize;
-                    % randomLogPl = logPlScalar + (rand() - 0.5) * squareSize;
-                    % 
-                    % randomPiScalar = 10^randomLogPi;
-                    % randomPlScalar = 10^randomLogPl;
-                    % 
-                    % % Define random piVals and plVals
-                    % randomPiVals = randomPiScalar * ones(1, numOfDGs);
-                    % randomPlVals = randomPlScalar * ones(1, numOfLines);
+                    randomLogPi = logPiScalar + (rand() - 0.5) * squareSize;
+                    randomLogPl = logPlScalar + (rand() - 0.5) * squareSize;
 
-                    % Generate random piVals and plVals within the square area
-                    randomLogPi = logPiScalar + (rand(1, numOfDGs) - 0.5) * squareSize;
-                    randomLogPl = logPlScalar + (rand(1, numOfLines) - 0.5) * squareSize;
+                    randomPiScalar = 10^randomLogPi;
+                    randomPlScalar = 10^randomLogPl;
 
-                    randomPiVals = 10.^randomLogPi;
-                    randomPlVals = 10.^randomLogPl;
+                    % Define random piVals and plVals
+                    randomPiVals = randomPiScalar * ones(1, numOfDGs);
+                    randomPlVals = randomPlScalar * ones(1, numOfLines);
+
+                    % % Generate random piVals and plVals within the square area
+                    % randomLogPi = logPiScalar + (rand(1, numOfDGs) - 0.5) * squareSize;
+                    % randomLogPl = logPlScalar + (rand(1, numOfLines) - 0.5) * squareSize;
+                    % 
+                    % randomPiVals = 10.^randomLogPi;
+                    % randomPlVals = 10.^randomLogPl;
 
                     % Evaluate feasibility for the random points
                     [DG, Line, randomStatusLocalController] = centralizedLocalControlDesign(DG0, Line0, B_il, BarGamma, randomPiVals, randomPlVals);
@@ -109,18 +109,18 @@ function plotTestBothFeasibility(DG, Line, B_il, BarGamma, A_ij, isSoft, numOfDG
                         % Plot the result for the random points
                         if randomStatusLocalController == 1
                             % Blue cross for local controller status 1
-                            plot(mean(randomLogPi), mean(randomLogPl), 'bx', 'MarkerSize', 7, 'LineWidth', 1.5);
+                            plot(randomLogPi, randomLogPl, 'bx', 'MarkerSize', 7, 'LineWidth', 1.5);
                         else
                             % Red cross if local controller status is 0
-                            plot(mean(randomLogPi), mean(randomLogPl), 'rx', 'MarkerSize', 7, 'LineWidth', 1.5);
+                            plot(randomLogPi, randomLogPl, 'rx', 'MarkerSize', 7, 'LineWidth', 1.5);
                         end
 
                         if randomStatusGlobalController == 1
                             % Blue circle for global controller status 1
-                            plot(mean(randomLogPi), mean(randomLogPl), 'bo', 'MarkerSize', 7, 'LineWidth', 1.5);
+                            plot(randomLogPi, randomLogPl, 'bo', 'MarkerSize', 7, 'LineWidth', 1.5);
                         else
                             % Red circle if global controller status is 0
-                            plot(mean(randomLogPi), mean(randomLogPl), 'ro', 'MarkerSize', 7, 'LineWidth', 1.5);
+                            plot(randomLogPi, randomLogPl, 'ro', 'MarkerSize', 7, 'LineWidth', 1.5);
                         end
                     catch ME
                         % If an error occurs with the random point, skip it
