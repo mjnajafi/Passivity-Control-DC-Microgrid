@@ -238,6 +238,12 @@ Mat_15 = [  X_p_11 * BarC;
 Mat_5 = [Mat_4, Mat_15;
         Mat_15', Mat_55];
 
+Mat_5_Test1 = [Mat_11, (X_p_11 * BarC);
+               (X_p_11 * BarC)', Mat_55];
+Mat_5_Test2 = [Mat_44, (-X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12);
+               (-X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12)', Mat_55];
+
+
 Mat_66 = GammaTilde;
 Mat_16 = [  X_p_11;
             O_N';
@@ -247,13 +253,44 @@ Mat_16 = [  X_p_11;
 Mat_6 = [Mat_5, Mat_16;
         Mat_16', Mat_66];
 
+Mat_6_Test1 = [Mat_11, X_p_11;
+                X_p_11', Mat_66];
+Mat_6_Test2 = [Mat_44, (-X_21 * X_p_11);
+                (-X_21 * X_p_11)', Mat_66];
+
+
+W = Mat_4;
 
 tagName = ['W'];
 constraintTags{end+1} = tagName;
-con4 = tag(Mat_5 >= epsilon*eye(size(Mat_5)), tagName);
-constraintMats{end+1} = Mat_6;
+con4 = tag(W >= epsilon*eye(size(W)), tagName);
+constraintMats{end+1} = W;
 
 constraints = [constraints, con4];
+
+% Temporary - 1:
+W_Temp = Mat_6_Test1
+tagName = ['W_Temp_1'];
+constraintTags{end+1} = tagName;
+con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
+constraintMats{end+1} = W_Temp;
+constraints = [constraints, con4_Temp];
+
+% Temporary - 2:
+W_Temp = Mat_6_Test2
+tagName = ['W_Temp_1'];
+constraintTags{end+1} = tagName;
+con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
+constraintMats{end+1} = W_Temp;
+constraints = [constraints, con4_Temp];
+
+% Temporary - 2:
+W_Temp = Mat_5_Test1
+tagName = ['W_Temp_3'];
+constraintTags{end+1} = tagName;
+con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
+constraintMats{end+1} = W_Temp;
+constraints = [constraints, con4_Temp];
 
 
 % Structural constraints
@@ -367,7 +404,7 @@ end
 
 
 %% Debugging
-debugMode = 0;
+debugMode = 1;
 if debugMode
 
     feasibility = check(constraints);
@@ -426,8 +463,10 @@ if debugMode
     % 
     
     Mat_5Eigs = eig(value(Mat_5))
-    % Mat_55Val = value(Mat_55);
-    % Mat_55Eigs = eig(Mat_55Val)
+    Mat_55Val = value(Mat_55);
+    Mat_55Eigs = eig(Mat_55Val)
+    Mat_5_Test1Eigs = eig(value(Mat_5_Test1))
+    Mat_5_Test2Eigs = eig(value(Mat_5_Test2))
     % 
     
     Mat_6Eigs = eig(value(Mat_6))
