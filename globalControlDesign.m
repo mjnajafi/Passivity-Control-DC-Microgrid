@@ -269,7 +269,7 @@ constraintMats{end+1} = W;
 constraints = [constraints, con4];
 
 % Temporary - 1:
-W_Temp = Mat_6_Test1
+W_Temp = Mat_6_Test1;
 tagName = ['W_Temp_1'];
 constraintTags{end+1} = tagName;
 con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
@@ -277,15 +277,15 @@ constraintMats{end+1} = W_Temp;
 constraints = [constraints, con4_Temp];
 
 % Temporary - 2:
-W_Temp = Mat_6_Test2
+W_Temp = Mat_6_Test2;
 tagName = ['W_Temp_1'];
 constraintTags{end+1} = tagName;
 con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
 constraintMats{end+1} = W_Temp;
 constraints = [constraints, con4_Temp];
 
-% Temporary - 2:
-W_Temp = Mat_5_Test1
+% Temporary - 3:
+W_Temp = Mat_5_Test1;
 tagName = ['W_Temp_3'];
 constraintTags{end+1} = tagName;
 con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
@@ -326,7 +326,7 @@ costFun0 = 1*norm(Q.*costMatBlock,normType);
 
 
 % Total Cost Function
-costFun = 1*costFun0 + 1*gammaTilde + 1000*(gammaTilde-mean(diag(GammaMat)))^2; % soft %%% Play with this
+costFun = 1*costFun0 + 1*gammaTilde + 0*(gammaTilde-mean(diag(GammaMat)))^2; % soft %%% Play with this
 
 
 
