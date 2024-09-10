@@ -4,8 +4,8 @@ function plotGlobalControlDesign(DG, Line, B_il, BarGamma, A_ij, isSoft, numOfDG
     % Turn off all warnings
     warning off;
     % Define the correct range for piScalar and plScalar
-    piRange = 10.^(-15:1:5);  % 10^-15 to 10^0
-    plRange = 10.^(-15:1:5);  % 10^-15 to 10^0
+    piRange = 10.^(-10:1:10);  % 10^-15 to 10^0
+    plRange = 10.^(-10:1:10);  % 10^-15 to 10^0
 
     % Create a figure for the plot
     figure;
@@ -14,6 +14,9 @@ function plotGlobalControlDesign(DG, Line, B_il, BarGamma, A_ij, isSoft, numOfDG
     % Dummy handles for the legend
     h1 = plot(NaN, NaN, 'bx', 'MarkerSize', 8, 'LineWidth', 1.5);  % Blue cross for Status 1
     h2 = plot(NaN, NaN, 'rx', 'MarkerSize', 5, 'LineWidth', 1);    % Red cross for Status 0
+
+    DG0 = DG;
+    Line0 = Line;
 
     % Loop through each combination of piScalar and plScalar
     for i = 1:length(piRange)
@@ -26,11 +29,11 @@ function plotGlobalControlDesign(DG, Line, B_il, BarGamma, A_ij, isSoft, numOfDG
             plVals = plScalar * ones(1, numOfLines);
 
             % Call the centralizedLocalControlDesign function
-            [DG, Line, statusLocalController] = centralizedLocalControlDesign(DG, Line, B_il, BarGamma, piVals, plVals);
+            [DG, Line, statusLocalController] = centralizedLocalControlDesign(DG0, Line0, B_il, BarGamma, piVals, plVals);
 
             try
                 % Call the globalControlDesign function
-                [DG, Line, statusGlobalController, gammaTildeVal, K, C, BarC, H] = globalControlDesign(DG, Line, A_ij, B_il, BarGamma, isSoft);
+                [~, ~, statusGlobalController, ~, ~, ~, ~, ~] = globalControlDesign(DG, Line, A_ij, B_il, BarGamma, isSoft);
 
                 % Plot the result with a cross marker based on global controller status
                 if statusGlobalController == 1
