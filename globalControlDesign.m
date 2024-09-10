@@ -311,7 +311,8 @@ T5ValEigs = eig(T5Val);
 P_iVal = diag(value(P_i));
 P_lVal = diag(value(P_l));
 
-% eig5 = cond(value(Mat4_1))
+cond_BarC = cond(BarC)
+
 
 
 

@@ -162,50 +162,50 @@ end
 %            %     tilde_y_i_prev = tilde_y_i_k;
 %            % 
 %            % % end
-% 
-%            % % Constraint (66g)
-%            % epsilon = 0.001; % Minimum value
-%            % rho_min = epsilon;
-%            rho_max = min(p_i{i}, 4*BarGamma/p_i{i});
-%            rho_min = rho_max/100;
-%            num_breakpoints = 100; % Desired number of breakpoints
-% 
-%            % Generate breakpoints linearly spaced between rho_min and rho_max
-%            rho_breakpoints = linspace(rho_min, rho_max, num_breakpoints);
-% 
-%            n = length(rho_breakpoints) - 1; % Number of segments
-%            con8 = []; % Initialize constraint array
-% 
-%            % Loop through each segment defined by breakpoints
-%            for j = 1:n
-%                % Breakpoints
-%                rho_left = rho_breakpoints(j);
-%                rho_right = rho_breakpoints(j + 1);
-% 
-%                % Evaluate the function at breakpoints
-%                nu_left = -p_i{i} / (p_l{l} * rho_left);
-%                nu_right = -p_i{i} / (p_l{l} * rho_right);
-% 
-%                 % Calculate the slope (m) and intercept (c) for linear approximation
-%                 m = (nu_right - nu_left) / (rho_right - rho_left);
-%                 c = nu_left - m * rho_left;
-% 
-%                 % Create constraints for the current segment
-%                 % For -p_i / (p_l * tilde_rho_i) < nu_l
-%                 % => nu_l >= m * tilde_rho_i + c
-%                 con8_k = nu_l{l} >= m * rhoTilde_i{i} + c;
-% 
-%                 % Append the constraints for the current segment
-%                 con8 = [con8, con8_k];
-%            end
-% 
-%            % Add upper bound constraint for nu_l
-%            con8_upper = nu_l{l} <= 0;
-%            con8 = [con8, con8_upper];
-% 
-%            % Display breakpoints for verification
-%            disp('Breakpoints for tilde_rho_i:');
-%            disp(rho_breakpoints);
+
+           % % Constraint (66g)
+           % epsilon = 0.001; % Minimum value
+           % rho_min = epsilon;
+           % rho_max = min(p_i{i}, 4*BarGamma/p_i{i});
+           % rho_min = rho_max/100;
+           % num_breakpoints = 100; % Desired number of breakpoints
+           % 
+           % % Generate breakpoints linearly spaced between rho_min and rho_max
+           % rho_breakpoints = linspace(rho_min, rho_max, num_breakpoints);
+           % 
+           % n = length(rho_breakpoints) - 1; % Number of segments
+           % con8 = []; % Initialize constraint array
+           % 
+           % % Loop through each segment defined by breakpoints
+           % for j = 1:n
+           %     % Breakpoints
+           %     rho_left = rho_breakpoints(j);
+           %     rho_right = rho_breakpoints(j + 1);
+           % 
+           %     % Evaluate the function at breakpoints
+           %     nu_left = -p_i{i} / (p_l{l} * rho_left);
+           %     nu_right = -p_i{i} / (p_l{l} * rho_right);
+           % 
+           %      % Calculate the slope (m) and intercept (c) for linear approximation
+           %      m = (nu_right - nu_left) / (rho_right - rho_left);
+           %      c = nu_left - m * rho_left;
+           % 
+           %      % Create constraints for the current segment
+           %      % For -p_i / (p_l * tilde_rho_i) < nu_l
+           %      % => nu_l >= m * tilde_rho_i + c
+           %      con8_k = nu_l{l} >= m * rhoTilde_i{i} + c;
+           % 
+           %      % Append the constraints for the current segment
+           %      con8 = [con8, con8_k];
+           % end
+           % 
+           % % Add upper bound constraint for nu_l
+           % con8_upper = nu_l{l} <= 0;
+           % con8 = [con8, con8_upper];
+           % 
+           % % Display breakpoints for verification
+           % disp('Breakpoints for tilde_rho_i:');
+           % disp(rho_breakpoints);
 % 
 % 
 %             % 
