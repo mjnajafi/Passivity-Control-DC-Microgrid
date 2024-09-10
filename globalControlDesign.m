@@ -339,7 +339,7 @@ costFun0 = 1*norm(Q.*costMatBlock,normType);
 
 
 % Total Cost Function
-costFun = 1*costFun0 + 1000*gammaTilde; % soft %%% Play with this
+costFun = 1*costFun0 + 1*gammaTilde; % soft %%% Play with this
 
 
 

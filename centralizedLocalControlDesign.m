@@ -19,7 +19,7 @@ for i = 1:1:numOfDGs
     P_i{i} = sdpvar(3, 3, 'symmetric');
     K_i{i} = sdpvar(1, 3, 'full');
     nu_i{i} = sdpvar(1, 1, 'full');
-    rho_i{i} = sdpvar(1, 1, 'full'); % Representing: rho
+    rho_i{i} = sdpvar(1, 1, 'full'); % Representing: rho (for newCon8)
     rhoTilde_i{i} = sdpvar(1, 1, 'full'); % Representing: 1/rho
     gammaTilde_i{i} = sdpvar(1, 1,'full');
 end
@@ -115,7 +115,7 @@ for i = 1:1:numOfDGs
     
         tagName = ['rho_',num2str(i),'_receprocity'];
         constraintTags{end+1} = tagName;
-        con4_33 = tag([rho_i{i}, 1; 1, rhoTilde_i{i}] >= 0, tagName);
+        con4_33 = tag([rho_i{i}, 1; 1, rhoTilde_i{i}] >= 0, tagName); % rho_i rhoTilde_i >= 1
         constraintMats{end+1} = [rho_i{i}, 1; 1, rhoTilde_i{i}];
     end
 
