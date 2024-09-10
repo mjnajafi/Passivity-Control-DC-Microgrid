@@ -9,6 +9,8 @@ function [DG,Line,statusGlobalController,gammaTildeVal,K,C,BarC,H,P_iVal,P_lVal]
 
 numOfDGs = size(B_il,1);
 numOfLines = size(B_il,2);
+epsilon = 0.000001; % Minimum value
+debugMode = 0;
 
 %% Creating C , BarC , and H Matrices
 
@@ -42,7 +44,11 @@ for i = 1:numOfDGs
     H = blkdiag(H, H_i);
 end
 
-
+% GammaMat
+GammaMat = [];
+for i = 1:numOfDGs
+    GammaMat = blkdiag(GammaMat, DG{i}.gammaTilde0);
+end
 
 
 %% Creating the adjacency matrix, null matrix, and cost matrix
@@ -91,37 +97,8 @@ GammaTilde = gammaTilde*I;
 Q = sdpvar(3*numOfDGs, 3*numOfDGs, 'full'); 
 
 P_i = sdpvar(numOfDGs, numOfDGs, 'diagonal');
-% for i = 1:numOfDGs
-%     P_i(i,i) = sdpvar(1, 1, 'full');
-% end
-
 
 P_l = sdpvar(numOfLines, numOfLines, 'diagonal');
-% for l = 1:numOfLines
-%     P_l(l,l) = sdpvar(1, 1,'full');
-% end
-
-% Fixed Values
-% baseP_i = 1e-4;                              % Define the fixed value
-% P_i = zeros(numOfDGs); 
-% 
-% for i = 1:numOfDGs
-%     variation = baseP_i * (2 * rand() - 1) * 0.1; % Small variation
-%     P_i(i,i) = baseP_i + variation;                 % Set the value in the diagonal
-% end
-% 
-% 
-% baseP_l = 1e-4;                             % Define the base value for P_l
-% P_l = zeros(numOfLines); 
-% 
-% for l = 1:numOfLines
-%     variation = baseP_l * (2 * rand() - 1) * 0.1; % Small variation
-%     P_l(l,l) = baseP_l + variation;                 % Set the value in the diagonal
-% end
-
-
-
-
 
 I_n = eye(3);
 
@@ -179,22 +156,40 @@ BarX_21 = BarX_12';
 
 %% Constraints 
 constraints = [];
+constraintTags = {}; % Cell array to hold tags
+constraintMats = {}; % Cell array to hold matrices
 
 % Constraints in (46b)
 for i = 1:numOfDGs
-    con1 = P_i(i,i) >= 1e-6;
+    tagName = ['P_',num2str(i),num2str(i)];
+    constraintTags{end+1} = tagName;
+    con1 = tag(P_i(i,i) >= epsilon, tagName);
+    constraintMats{end+1} = P_i(i,i);
+
     constraints = [constraints, con1];
 end
 
 % Constraints in (46c)
 for l = 1:numOfLines
-    con2 = P_l(l,l) >= 1e-6;
+    tagName = ['PBar_',num2str(l),num2str(l)];
+    constraintTags{end+1} = tagName;
+    con2 = tag(P_l(l,l) >= epsilon, tagName);
+    constraintMats{end+1} = P_l(l,l);
+
     constraints = [constraints, con2];
 end
 
 % Constraints in (46d)
-con3_1 = gammaTilde >= 0;
-con3_2 = gammaTilde <= BarGamma;
+tagName = ['gammaTilde_low'];
+constraintTags{end+1} = tagName;
+con3_1 = tag(gammaTilde >= epsilon, tagName);
+constraintMats{end+1} = gammaTilde;
+
+tagName = ['gammaTilde_high'];
+constraintTags{end+1} = tagName;
+con3_2 = tag(gammaTilde <= BarGamma, tagName);
+constraintMats{end+1} = gammaTilde;
+
 constraints = [constraints, con3_1, con3_2];
 
 % Constraint in (47)
@@ -204,80 +199,153 @@ O_N = zeros(3*numOfDGs, numOfLines);
 O = zeros(numOfDGs, numOfLines);
 O_3N = zeros(3*numOfDGs);
 
-Mat1 = [X_p_11];
+Mat_11 = X_p_11; 
+Mat_1 = [Mat_11];
+ 
 
-Mat2 = [X_p_11, O_N;
-         O_N', BarX_Barp_11];
-
-Mat3 = [X_p_11, O_N, O_n';
-         O_N', BarX_Barp_11, O';
-         O_n, O, I_N];
-
-Mat4 = [X_p_11, O_N, O_n', Q;
-        O_N', BarX_Barp_11, O', BarX_Barp_11 * C;
-        O_n, O, I_N, H;
-        Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22];
-
-Mat5 = [X_p_11, O_N, O_n', Q, X_p_11 * BarC;
-        O_N', BarX_Barp_11, O', BarX_Barp_11 * C, O_bar;
-        O_n, O, I_N, H, O;
-        Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12;
-        BarC' * X_p_11', O_bar, O', -BarC' * X_p_11' * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22];
+Mat_22 = BarX_Barp_11;
+Mat_12 = O_N;
+Mat_2 = [Mat_1, Mat_12;
+        Mat_12', Mat_22];
 
 
-Mat6 = [X_p_11, O_N, O_n', Q, X_p_11 * BarC, X_p_11;
-        O_N', BarX_Barp_11, O', BarX_Barp_11 * C, O_bar, O_N';
-        O_n, O, I_N, H, O, O_n;
-        Q', C' * BarX_Barp_11', H', -Q' * X_12 - X_21 * Q - X_p_22, -X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12, -X_21 * X_p_11;
-        BarC' * X_p_11', O_bar, O', -BarC' * X_p_11' * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22, O_N';
-        X_p_11, O_N, O_n', -X_p_11' * X_12, O_N, GammaTilde];
+Mat_33 = I_N;
+Mat_13 = [  O_n';
+            O'      ];
+Mat_3 = [Mat_2, Mat_13;
+        Mat_13', Mat_33];
 
-Mat4_1 = [X_p_11 + 1e-6 * eye(size(X_p_11)), X_p_11 * BarC; 
-          BarC' * X_p_11', -BarX_Barp_22 + 1e-6 * eye(size(BarX_Barp_22))];
 
+Mat_44 = -Q' * X_12 - X_21 * Q - X_p_22;
+Mat_14 = [  Q;  
+            BarX_Barp_11 * C;  
+            H                   ];
+Mat_4 = [Mat_3, Mat_14;
+        Mat_14', Mat_44];
+
+Mat_4_Test1 = [ Mat_11, Q;
+                Q', Mat_44];
+Mat_4_Test2 = [ Mat_22, BarX_Barp_11 * C;
+                (BarX_Barp_11 * C)', Mat_44];
+Mat_4_Test3 = [ Mat_33, H;
+                H', Mat_44];
+
+
+Mat_55 =  -BarX_Barp_22;
+Mat_15 = [  X_p_11 * BarC;
+            O_bar;
+            O;   
+            -X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12    ];
+Mat_5 = [Mat_4, Mat_15;
+        Mat_15', Mat_55];
+
+Mat_5_Test1 = [Mat_11, (X_p_11 * BarC);
+               (X_p_11 * BarC)', Mat_55];
+Mat_5_Test2 = [Mat_44, (-X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12);
+               (-X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12)', Mat_55];
+
+
+Mat_66 = GammaTilde;
+Mat_16 = [  X_p_11;
+            O_N';
+            O_n;
+            -X_21 * X_p_11;
+            O_N'    ];
+Mat_6 = [Mat_5, Mat_16;
+        Mat_16', Mat_66];
+
+Mat_6_Test1 = [Mat_11, X_p_11;
+                X_p_11', Mat_66];
+Mat_6_Test2 = [Mat_44, (-X_21 * X_p_11);
+                (-X_21 * X_p_11)', Mat_66];
+
+
+W = Mat_6;
+
+tagName = ['W'];
+constraintTags{end+1} = tagName;
+con4 = tag(W >= epsilon*eye(size(W)), tagName);
+constraintMats{end+1} = W;
+
+constraints = [constraints, con4];
+
+% % Temporary - 1:
+% W_Temp = Mat_6_Test1;
+% tagName = ['W_Temp_Mat_6_Test1'];
+% constraintTags{end+1} = tagName;
+% con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
+% constraintMats{end+1} = W_Temp;
+% constraints = [constraints, con4_Temp];
 % 
-% Mat4_1 = [X_p_11, zeros(12,4); 
-%                zeros(4,12), -BarX_Barp_22];
+% % Temporary - 2:
+% W_Temp = Mat_6_Test2;
+% tagName = ['W_Temp_Mat_6_Test2'];
+% constraintTags{end+1} = tagName;
+% con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
+% constraintMats{end+1} = W_Temp;
+% constraints = [constraints, con4_Temp];
+
+% % Temporary - 3:
+% W_Temp = Mat_5_Test1;
+% tagName = ['W_Temp_Mat_5_Test1'];
+% constraintTags{end+1} = tagName;
+% con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
+% constraintMats{end+1} = W_Temp;
+% constraints = [constraints, con4_Temp];
 % 
-% 
-% % Mat4_1 = [-BarX_Barp_22];
-con4_1 = Mat4_1 >= 0;
+% % Temporary - 4:
+% W_Temp = Mat_5_Test2;
+% tagName = ['W_Temp_Mat_5_Test2'];
+% constraintTags{end+1} = tagName;
+% con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
+% constraintMats{end+1} = W_Temp;
+% constraints = [constraints, con4_Temp];
+
+% 49g and h (Mat_5_Test1 & 2) conflicts 49e (Mat_4_test1 & 2)
 
 
-T = Mat4;            
-con4 = T >= 0;
-% constraints = [constraints, con4];
-constraints = [constraints, con4, con4_1];
+
 
 % Structural constraints
-con5 = Q.*(nullMatBlock==1) == O_3N;     % Structural limitations (due to the format of the control law)
+tagName = ['Q_Structure'];
+constraintTags{end+1} = tagName;
+con5 = tag(Q.*(nullMatBlock==1) == O_3N, tagName);     % Structural limitations (due to the format of the control law)
+constraintMats{end+1} = Q;
+
 constraints = [constraints, con5];
 
-% Objective Function
+
+% Minimum Budget Constraints
+% con6 = costFun0 >= 0.001;  %%% Play with this
+% constraints = [constraints, con6];
+
+
+% Hard Graph Constraints (forcing K_ij = K_ji = 0 if i and j are not communication neighbors)
+if ~isSoft
+    % Follow strictly the given communication tpology (by A_ij adjacency matrix)
+    tagName = ['Q_Topology'];
+    constraintTags{end+1} = tagName;
+    con7 = tag(Q.*(adjMatBlock==0) == O_3N, tagName);      % Graph structure : hard constraint
+    constraintMats{end+1} = Q;
+
+    constraints = [constraints, con7]; % With the hard graph constraint con7
+end
+
+
+%% Objective Function
 normType = 2;
 costFun0 = 1*norm(Q.*costMatBlock,normType);
 % costFun0 = sum(sum(Q.*costMatBlock)); %%% Play with this
 
-% Minimum Budget Constraints
-con6 = costFun0 >= 0.001;  %%% Play with this
-% constraints = [constraints, con6];
 
-% Hard Graph Constraints (forcing K_ij = K_ji = 0 if i and j are not communication neighbors)
-con7 = Q.*(adjMatBlock==0) == O_3N;      % Graph structure : hard constraint
+% Total Cost Function
+costFun = 1*costFun0 + 1*gammaTilde; % soft %%% Play with this
 
-if isSoft
-    % Try to get a communication topology that is as much similar/colse as possible to the given communication tpology (by A_ij adjacency matrix)
-    constraints = constraints; % Without the hard graph constraint con7
-    costFun = 1*costFun0 + 1*gammaTilde; % soft %%% Play with this
-else 
-    % Follow strictly the given communication tpology (by A_ij adjacency matrix)
-    constraints = [constraints, con7]; % With the hard graph constraint con7
-    costFun = 1*costFun0 + 1*gammaTilde; % hard (same as soft) %%% Play with this
-end
+
 
 %% Solve the LMI problem (47)
 
-solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1, 'debug', 1);
+solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0, 'debug', 0);
 
 sol = optimize(constraints,costFun,solverOptions);
 
@@ -285,45 +353,14 @@ statusGlobalController = sol.problem == 0;
 
 %% Extract variable values
 
-% Study the components of T (all the 1x1 and 2x2 blocks we considered in
-% Theorem 2 to find necessary conditions)
-TVal = value(T);
-TValEigs = eig(TVal);
-
-T1Val = value(X_p_11);
-T1ValEigs = eig(T1Val);
-
-T2Val = value(BarX_Barp_11);
-T2ValEigs = eig(T2Val);
-
-T3Val = value(-Q' * X_12 - X_21 * Q - X_p_22);
-T3ValEigs = eig(T3Val);
-
-T4Val = value(- X_p_22);
-T4ValEigs = eig(T4Val);
-
-T5Val = value(-Q' * X_12 - X_21 * Q);
-T5ValEigs = eig(T5Val);
-% 
-% T4_1Val = value(Mat4_1);
-% T4_1ValEigs = eig(T4_1Val);
-
 P_iVal = diag(value(P_i));
 P_lVal = diag(value(P_l));
-
-cond_BarC = cond(BarC)
-
-
-
-
-
 
 gammaTildeVal = value(gammaTilde);
 QVal = value(Q);
 X_p_11Val = value(X_p_11);
 KVal = X_p_11Val \ QVal;
-costFun0Val = value(costFun0);
-costFunVal = value(costFun);
+
 
 
 
@@ -378,4 +415,80 @@ for i = 1:numOfDGs
     end
 end
 
+
+%% Debugging
+
+if debugMode
+
+    feasibility = check(constraints);
+    
+    % Combine tags and feasibility into one array for sorting
+    combinedList = [feasibility(:), (1:length(feasibility))'];
+    
+    % Sort based on the first column (feasibility values)
+    sortedList = sortrows(combinedList, 1);  % Sort by feasibility, ascending order
+    
+    % Printing
+    for i = 1:length(sortedList)
+        idx = sortedList(i, 2);  % Get the original index of the constraint
+        if feasibility(idx) < -1e-6
+            disp(['Constraint "', constraintTags{idx}, '" is violated by ', num2str(feasibility(idx)), ' .']);
+            W_val = value(constraintMats{idx})
+            for j = 1:size(W_val, 1)
+                submatrix = W_val(1:j, 1:j);  % Extract principal minor
+                if det(submatrix) < 0
+                    disp(['Principal minor ', num2str(j), ' is not positive semi-definite.']);
+                end
+            end
+        else
+            disp(['Constraint "', constraintTags{idx}, '" is satisfied by ',num2str(feasibility(idx)),' .']);
+            W_val = value(constraintMats{idx})
+        end
+    end
+
+    % costFun0Val = value(costFun0)
+    % costFunVal = value(costFun)
+    
+    Mat_1Eigs = eig(value(Mat_1))
+    % Mat_11Val = value(Mat_11);
+    % Mat_11Eigs = eig(Mat_11Val)
+    % 
+    
+    Mat_2Eigs = eig(value(Mat_2))
+    % Mat_22Val = value(Mat_22);
+    % Mat_22Eigs = eig(Mat_22Val)
+    % 
+    
+    Mat_3Eigs = eig(value(Mat_3))
+    % Mat_33Val = value(Mat_33);
+    % Mat_33Eigs = eig(Mat_33Val)
+    % 
+    
+    Mat_4Eigs = eig(value(Mat_4))
+    Mat_44Val = value(Mat_44);
+    Mat_44Eigs = eig(Mat_44Val)
+    Mat_4_Test1Eigs = eig(value(Mat_4_Test1))
+    Mat_4_Test2Eigs = eig(value(Mat_4_Test2))
+    Mat_4_Test3Eigs = eig(value(Mat_4_Test3))
+    value(P_i)
+    value(P_l)
+    GammaMat
+    value(gammaTilde)
+    % 
+    
+    Mat_5Eigs = eig(value(Mat_5))
+    Mat_55Val = value(Mat_55);
+    Mat_55Eigs = eig(Mat_55Val)
+    Mat_5_Test1Eigs = eig(value(Mat_5_Test1))
+    Mat_5_Test2Eigs = eig(value(Mat_5_Test2))
+    % 
+    
+    Mat_6Eigs = eig(value(Mat_6))
+    Mat_66Val = value(Mat_66);
+    Mat_66Eigs = eig(Mat_66Val)
+    Mat_6_Test1Eigs = eig(value(Mat_6_Test1))
+    Mat_6_Test2Eigs = eig(value(Mat_6_Test2))
+
+
+end
 end

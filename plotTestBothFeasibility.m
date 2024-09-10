@@ -5,14 +5,14 @@ function plotTestBothFeasibility(DG, Line, B_il, BarGamma, A_ij, isSoft, numOfDG
     step_size = 0.5;
 
     % Define the correct range for piScalar and plScalar
-    piRange = 10.^(-5:step_size:0);  % Adjust the range as needed
-    plRange = 10.^(-5:step_size:0);  % Adjust the range as needed
+    piRange = 10.^(-7:step_size:7);  % Adjust the range as needed
+    plRange = 10.^(-7:step_size:7);  % Adjust the range as needed
 
     % Set the square size (length of each side of the square)
     squareSize = step_size;  % Adjust this size as needed
 
     % Number of random points to generate around each main point
-    numRandomPoints = 1;
+    numRandomPoints = 5;
 
     % Create a figure for the plot
     figure;
@@ -24,6 +24,8 @@ function plotTestBothFeasibility(DG, Line, B_il, BarGamma, A_ij, isSoft, numOfDG
 
     DG0 = DG;
     Line0 = Line;
+
+    successCount = 0; 
 
     % Loop through each combination of piScalar and plScalar
     for i = 1:length(piRange)
@@ -40,7 +42,7 @@ function plotTestBothFeasibility(DG, Line, B_il, BarGamma, A_ij, isSoft, numOfDG
 
             try
                 % Call the globalControlDesign function
-                [DG, Line, statusGlobalController, gammaTildeVal, K, C, BarC, H, P_iVal, P_lVal] = globalControlDesign(DG, Line, A_ij, B_il, BarGamma, isSoft);
+                [~, ~, statusGlobalController, ~, ~, ~, ~, ~, ~, ~] = globalControlDesign(DG, Line, A_ij, B_il, BarGamma, isSoft);
 
                 % Calculate the center point in log10 scale
                 logPiScalar = log10(piScalar);
@@ -83,45 +85,57 @@ function plotTestBothFeasibility(DG, Line, B_il, BarGamma, A_ij, isSoft, numOfDG
                 for k = 1:numRandomPoints
 
                     % % Generate random piVals and plVals within the square area
-                    randomLogPi = logPiScalar + (rand() - 0.5) * squareSize;
-                    randomLogPl = logPlScalar + (rand() - 0.5) * squareSize;
-
-                    randomPiScalar = 10^randomLogPi;
-                    randomPlScalar = 10^randomLogPl;
-
-                    % Define random piVals and plVals
-                    randomPiVals = randomPiScalar * ones(1, numOfDGs);
-                    randomPlVals = randomPlScalar * ones(1, numOfLines);
-
-                    % % Generate random piVals and plVals within the square area
-                    % randomLogPi = logPiScalar + (rand(1, numOfDGs) - 0.5) * squareSize;
-                    % randomLogPl = logPlScalar + (rand(1, numOfLines) - 0.5) * squareSize;
+                    % randomLogPi = logPiScalar + (rand() - 0.5) * squareSize;
+                    % randomLogPl = logPlScalar + (rand() - 0.5) * squareSize;
                     % 
-                    % randomPiVals = 10.^randomLogPi;
-                    % randomPlVals = 10.^randomLogPl;
+                    % randomPiScalar = 10^randomLogPi;
+                    % randomPlScalar = 10^randomLogPl;
+                    % 
+                    % % Define random piVals and plVals
+                    % randomPiVals = randomPiScalar * ones(1, numOfDGs);
+                    % randomPlVals = randomPlScalar * ones(1, numOfLines);
+
+                    % Generate random piVals and plVals within the square area
+                    randomLogPi = logPiScalar + (rand(1, numOfDGs) - 0.5) * squareSize;
+                    randomLogPl = logPlScalar + (rand(1, numOfLines) - 0.5) * squareSize;
+
+                    randomPiVals = 10.^randomLogPi;
+                    randomPlVals = 10.^randomLogPl;
 
                     % Evaluate feasibility for the random points
                     [DG, Line, randomStatusLocalController] = centralizedLocalControlDesign(DG0, Line0, B_il, BarGamma, randomPiVals, randomPlVals);
 
                     try
-                        [DG, Line, randomStatusGlobalController, ~, ~, ~, ~, ~, ~] = globalControlDesign(DG, Line, A_ij, B_il, BarGamma, isSoft);
+                        [~, ~, randomStatusGlobalController, ~, ~, ~, ~, ~, ~] = globalControlDesign(DG, Line, A_ij, B_il, BarGamma, isSoft);
+                        
+                        % Pick a random point 
+                        randomLogPiRandom = randomLogPi(randi(numOfDGs,1));
+                        randomLogPlRandom = randomLogPl(randi(numOfLines,1));
 
                         % Plot the result for the random points
                         if randomStatusLocalController == 1
                             % Blue cross for local controller status 1
-                            plot(randomLogPi, randomLogPl, 'bx', 'MarkerSize', 7, 'LineWidth', 1.5);
+                            plot(randomLogPiRandom, randomLogPlRandom, 'bx', 'MarkerSize', 7, 'LineWidth', 1.5);
                         else
                             % Red cross if local controller status is 0
-                            plot(randomLogPi, randomLogPl, 'rx', 'MarkerSize', 7, 'LineWidth', 1.5);
+                            plot(randomLogPiRandom, randomLogPlRandom, 'rx', 'MarkerSize', 7, 'LineWidth', 1.5);
                         end
 
                         if randomStatusGlobalController == 1
                             % Blue circle for global controller status 1
-                            plot(randomLogPi, randomLogPl, 'bo', 'MarkerSize', 7, 'LineWidth', 1.5);
+                            plot(randomLogPiRandom, randomLogPlRandom, 'bo', 'MarkerSize', 7, 'LineWidth', 1.5);
                         else
                             % Red circle if global controller status is 0
-                            plot(randomLogPi, randomLogPl, 'ro', 'MarkerSize', 7, 'LineWidth', 1.5);
+                            plot(randomLogPiRandom, randomLogPlRandom, 'ro', 'MarkerSize', 7, 'LineWidth', 1.5);
                         end
+
+                        if randomStatusLocalController == 1 && randomStatusGlobalController == 1 
+                            disp('Success!')
+                            successCount = successCount + 1;
+                            randomLogPi
+                            randomLogPl
+                        end
+
                     catch ME
                         % If an error occurs with the random point, skip it
                         continue;

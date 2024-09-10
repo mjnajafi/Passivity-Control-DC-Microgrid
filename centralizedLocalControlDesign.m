@@ -9,12 +9,17 @@ function [DG,Line,statusLocalController] = centralizedLocalControlDesign(DG,Line
 numOfDGs = size(B_il,1);
 numOfLines = size(B_il,2);
 
+epsilon = 0.000001; % Minimum value
+useNewCon8 = 0;
+debugMode = 0;
+
 % Create LMI variables necessary for (66)
 %% Variables corresponding to DGs like P_i, K_i, nu_i, rhoTilde_i, gammaTilde_i
 for i = 1:1:numOfDGs
     P_i{i} = sdpvar(3, 3, 'symmetric');
     K_i{i} = sdpvar(1, 3, 'full');
     nu_i{i} = sdpvar(1, 1, 'full');
+    rho_i{i} = sdpvar(1, 1, 'full'); % Representing: rho (for newCon8)
     rhoTilde_i{i} = sdpvar(1, 1, 'full'); % Representing: 1/rho
     gammaTilde_i{i} = sdpvar(1, 1,'full');
 end
@@ -27,19 +32,32 @@ for l = 1:1:numOfLines
 end
 
 constraints = [];
+constraintTags = {}; % Cell array to hold tags
+constraintMats = {}; % Cell array to hold matrices
+
 %% Combine constraints over all DGs (66a-Part1, 66b,66d,66e)
 
 for i = 1:1:numOfDGs
 
     Ai = DG{i}.A;
     Bi = DG{i}.B;
+    Ii = eye(size(Ai));
 
-    con0 = gammaTilde_i{i} >=0;
+    tagName = ['gammaTilde_',num2str(i),'_low'];
+    constraintTags{end+1} = tagName;
+    con0_1 = tag(gammaTilde_i{i} >= epsilon, tagName);
+    constraintMats{end+1} = gammaTilde_i{i};
+
+    tagName = ['gammaTilde_',num2str(i),'_high'];
+    constraintTags{end+1} = tagName;
+    con0_2 = tag(gammaTilde_i{i} <= BarGamma, tagName);
+    constraintMats{end+1} = gammaTilde_i{i};
 
     % Constraint (66a-Part1)
-    con1 = P_i{i} >= 0;
-
-    
+    tagName = ['P_',num2str(i)];
+    constraintTags{end+1} = tagName;
+    con1 = tag(P_i{i} >= epsilon*Ii, tagName);
+    constraintMats{end+1} = P_i{i};
     
     % Constraint (66b)
     DMat = rhoTilde_i{i} * eye(3);
@@ -48,23 +66,65 @@ for i = 1:1:numOfDGs
                 -eye(3) + 0.5*P_i{i}, -nu_i{i}*eye(3)];
     W = [DMat, MMat; MMat', ThetaMat];
     
-    con2 = W >= 0;
+    tagName = ['W_',num2str(i)];
+    constraintTags{end+1} = tagName;
+    con2 = tag(W >= epsilon*eye(size(W)), tagName);
+    constraintMats{end+1} = W;
     
     % Constraint (66d)
     p_i{i} = piVals(i); % predefined value
-    
-    con3_1 = -gammaTilde_i{i}/p_i{i} <= nu_i{i};
-    con3_2 = nu_i{i} <= 0;
+
+    tagName = ['nu_',num2str(i),'_low'];
+    constraintTags{end+1} = tagName;
+    con3_1 = tag(nu_i{i} >= -gammaTilde_i{i}/p_i{i}, tagName);
+    constraintMats{end+1} = -gammaTilde_i{i}/p_i{i};
+
+    tagName = ['nu_',num2str(i),'_high'];
+    constraintTags{end+1} = tagName;
+    con3_2 = tag(nu_i{i} <= -epsilon, tagName);
+    constraintMats{end+1} = nu_i{i};
     
 
     % Constraint (66e)
-    con4_1 = 0 <= rhoTilde_i{i};
+    tagName = ['rhoTilde_',num2str(i),'_low'];
+    constraintTags{end+1} = tagName;
+    con4_1 = tag(rhoTilde_i{i} >= epsilon, tagName);
+    constraintMats{end+1} = rhoTilde_i{i};
 
-    con4_21 = rhoTilde_i{i} <= p_i{i};
-    con4_22 = rhoTilde_i{i} <= 4*gammaTilde_i{i}/p_i{i};
+    tagName = ['rhoTilde_',num2str(i),'_high1'];
+    constraintTags{end+1} = tagName;
+    con4_21 = tag(rhoTilde_i{i} <= p_i{i}, tagName);
+    constraintMats{end+1} = p_i{i};
     
+    tagName = ['rhoTilde_',num2str(i),'_high2'];
+    constraintTags{end+1} = tagName;
+    con4_22 = tag(rhoTilde_i{i} <= 4*gammaTilde_i{i}/p_i{i}, tagName);
+    constraintMats{end+1} = 4*gammaTilde_i{i}/p_i{i};
+
+    % New con8:
+    if useNewCon8
+        tagName = ['rho_',num2str(i),'_low'];
+        constraintTags{end+1} = tagName;
+        con4_31 = tag(rho_i{i} >= 1/max(p_i{i}, 4*BarGamma/p_i{i}), tagName);
+        constraintMats{end+1} = 1/max(p_i{i}, 4*BarGamma/p_i{i});
+    
+        tagName = ['rho_',num2str(i),'_high'];
+        constraintTags{end+1} = tagName;
+        con4_32 = tag(rho_i{i} <= 1/epsilon, tagName);
+        constraintMats{end+1} = rho_i{i};
+    
+        tagName = ['rho_',num2str(i),'_receprocity'];
+        constraintTags{end+1} = tagName;
+        con4_33 = tag([rho_i{i}, 1; 1, rhoTilde_i{i}] >= 0, tagName); % rho_i rhoTilde_i >= 1
+        constraintMats{end+1} = [rho_i{i}, 1; 1, rhoTilde_i{i}];
+    end
+
     % Collecting Constraints
-    constraints = [constraints, con0, con1, con2, con3_1, con3_2, con4_1, con4_21, con4_22];
+    if useNewCon8
+        constraints = [constraints, con0_1, con0_2, con1, con2, con3_1, con3_2, con4_1, con4_21, con4_22, con4_31, con4_32, con4_33];
+    else
+        constraints = [constraints, con0_1, con0_2, con1, con2, con3_1, con3_2, con4_1, con4_21, con4_22];
+    end
  end
 
 
@@ -73,189 +133,122 @@ for l = 1:1:numOfLines
 
     Rl = Line{l}.R;
     Ll = Line{l}.L;
-    
+    Il = eye(1);
     % Constraint (66a-Part2)
-    con5 = P_l{l} >= 0;
 
-    % 
-    con7_0 = nu_l{l} <= 0; % See Constraint (51)
-    con7_1 = rho_l{l} >= 0; % See Constraint (53)
+    tagName = ['PBar_',num2str(l)];
+    constraintTags{end+1} = tagName;
+    con5 = tag(P_l{l} >= epsilon*Il, tagName);
+    constraintMats{end+1} = P_l{l};
     
     p_l{l} = plVals(l); %1/numOfLines;  % predefined value
 
     
     % Constraint (66c)
-    Z = [(2*P_l{l}*Rl)/Ll - rho_l{l}, -P_l{l}/Ll + 1/2;
+    W = [(2*P_l{l}*Rl)/Ll - rho_l{l}, -P_l{l}/Ll + 1/2;
          -P_l{l}/Ll + 1/2, -nu_l{l}];
 
-    con6 = Z >= 0;
-     
-   
+    tagName = ['WBar_',num2str(l)];
+    constraintTags{end+1} = tagName;
+    con6 = tag(W >= epsilon*eye(size(W)), tagName);
+    constraintMats{end+1} = W;
+    
+    tagName = ['nuBar_',num2str(l),'_high'];
+    constraintTags{end+1} = tagName;
+    con7_0 = tag(nu_l{l} <= -epsilon, tagName);
+    constraintMats{end+1} = nu_l{l};
+
+    tagName = ['rhoBar_',num2str(l),'low'];
+    constraintTags{end+1} = tagName;
+    con7_1 = tag(rho_l{l} >= epsilon, tagName);
+    constraintMats{end+1} = rho_l{l};
 
     % Collecting Constraints
     constraints = [constraints, con5, con6, con7_0, con7_1];
 end
 
 
-% %% Combine all mixed constraints (66f, 66g)
-% %%%% Comment: Debug these constraints, why their addition affects the
-% %%%% resulting passivity properties...?
-% for i = 1:1:numOfDGs
-%     for l = 1:1:numOfLines
-% 
-%         Ct = DG{i}.C;
-% 
-%         if B_il(i,l) ~= 0
-% 
-%            % Constraint (66f)
-%            con7_2 = rho_l{l} >= -(p_i{i}*nu_i{i})/(p_l{l}*Ct^2);
-%            con7_3 = rho_l{l} >= ((rhoTilde_i{i})/(p_i{i}*p_l{l}))*((p_i{i}/(2*Ct))-(p_l{l}/2))^2;
-% 
-% 
-% 
-%            % % Constraint (66g)
-%            % epsilon = 0.001; % Minimum value
-%            % n = 100; % Number of intervals
-%            % % rho_min = epsilon;
-%            % rho_max = min(p_i{i}, 4*BarGamma/p_i{i});
-%            % rho_min = rho_max/1000;
-%            % delta_i = (rho_max - rho_min) / n;
-%            % 
-%            % 
-%            % % con8Test{i,l} = nu_l{l} +  p_i{i}/(rhoTilde_i{i}*p_l{l}); % This needs to be positive for the global controller to be feasible
-%            % 
-%            % 
-%            % % % Initialize cell array to store individual constraints
-%            % con8 = [];
-%            % 
-%            % % Loop over each k from 1 to n to create individual constraints
-%            % tilde_rho_i_prev = rho_min;
-%            % tilde_y_i_prev = -p_i{i} / (p_l{l} * tilde_rho_i_prev);
-%            % 
-%            % for k = 1:n
-%            % 
-%            %     % Compute tilde_rho_i^k
-%            %    tilde_rho_i_k = rho_min + k * delta_i;   
-%            % 
-%            %     % Compute tilde_y_i^k
-%            %     tilde_y_i_k = -p_i{i} / (p_l{l} * tilde_rho_i_k);
-%            % 
-%            %     % Compute m_k and c_k
-%            %     m_k = (tilde_y_i_k - tilde_y_i_prev) / delta_i;
-%            %     c_k = tilde_y_i_k - m_k * tilde_rho_i_k;
-%            % 
-%            %     % % Define Constraint (66g)
-%            %     if ~isnan(m_k)
-%            %          con8_k = nu_l{l} >= m_k * rhoTilde_i{i} + c_k;
-%            %          con8 = [con8, con8_k];
-%            %     else
-%            %     %     i
-%            %     %     l
-%            %     %     k
-%            %          % delta_i
-%            %     %      m_k
-%            %     % end
-%            % 
-%            % 
-%            %     % Compute tilde_rho_i^{k-1} and tilde_y_i^{k-1}
-%            %     tilde_rho_i_prev = tilde_rho_i_k;
-%            %     tilde_y_i_prev = tilde_y_i_k;
-%            % 
-%            % % end
+%% Combine all mixed constraints (66f, 66g)
+%%%% Comment: Debug these constraints, why their addition affects the
+%%%% resulting passivity properties...?
+for i = 1:1:numOfDGs
+    for l = 1:1:numOfLines
 
-           % % Constraint (66g)
-           % epsilon = 0.001; % Minimum value
-           % rho_min = epsilon;
-           % rho_max = min(p_i{i}, 4*BarGamma/p_i{i});
-           % rho_min = rho_max/100;
-           % num_breakpoints = 100; % Desired number of breakpoints
-           % 
-           % % Generate breakpoints linearly spaced between rho_min and rho_max
-           % rho_breakpoints = linspace(rho_min, rho_max, num_breakpoints);
-           % 
-           % n = length(rho_breakpoints) - 1; % Number of segments
-           % con8 = []; % Initialize constraint array
-           % 
-           % % Loop through each segment defined by breakpoints
-           % for j = 1:n
-           %     % Breakpoints
-           %     rho_left = rho_breakpoints(j);
-           %     rho_right = rho_breakpoints(j + 1);
-           % 
-           %     % Evaluate the function at breakpoints
-           %     nu_left = -p_i{i} / (p_l{l} * rho_left);
-           %     nu_right = -p_i{i} / (p_l{l} * rho_right);
-           % 
-           %      % Calculate the slope (m) and intercept (c) for linear approximation
-           %      m = (nu_right - nu_left) / (rho_right - rho_left);
-           %      c = nu_left - m * rho_left;
-           % 
-           %      % Create constraints for the current segment
-           %      % For -p_i / (p_l * tilde_rho_i) < nu_l
-           %      % => nu_l >= m * tilde_rho_i + c
-           %      con8_k = nu_l{l} >= m * rhoTilde_i{i} + c;
-           % 
-           %      % Append the constraints for the current segment
-           %      con8 = [con8, con8_k];
-           % end
-           % 
-           % % Add upper bound constraint for nu_l
-           % con8_upper = nu_l{l} <= 0;
-           % con8 = [con8, con8_upper];
-           % 
-           % % Display breakpoints for verification
-           % disp('Breakpoints for tilde_rho_i:');
-           % disp(rho_breakpoints);
-% 
-% 
-%             % 
-%             % % Generate breakpoints
-%             % rho_breakpoints = linspace(rho_min, rho_max, num_breakpoints);
-%             % 
-%             % n = length(rho_breakpoints) - 1; % Number of segments
-%             % con8 = []; % Initialize constraint array
-%             % 
-%             % % Loop through each segment defined by breakpoints
-%             % for j = 1:n
-%             %     % Breakpoints
-%             %     rho_left = rho_breakpoints(j);
-%             %     rho_right = rho_breakpoints(j + 1);
-%             % 
-%             %     % Evaluate the function at breakpoints
-%             %     nu_left = -p_i / (p_l * rho_left);
-%             %     nu_right = -p_i / (p_l * rho_right);
-%             % 
-%             %     % Calculate the average slope (m) for linear approximation
-%             %     avg_nu = (nu_left + nu_right) / 2; % Average value for a smoother transition
-%             %     m = (nu_right - nu_left) / (rho_right - rho_left); % Original slope for reference
-%             %     c = avg_nu - m * ((rho_left + rho_right) / 2); % Calculate intercept based on average
-%             % 
-%             %     % Create relaxed constraints
-%             %     % Allowing for some slack in the constraint
-%             %     slack = 0.1; % You can adjust this value to relax the constraint
-%             %     con8_k = nu_l{l} >= m * rhoTilde_i{i} + c - slack; % Relaxed lower bound
-%             % 
-%             %     % Append the constraints for the current segment
-%             %     con8 = [con8, con8_k];
-%             % end
-%             % 
-%             % % Add upper bound constraint for nu_l
-%             % con8_upper = nu_l{l} <= 0;
-%             % con8 = [con8, con8_upper];
-%             % 
-%             % % Display breakpoints for verification
-%             % disp('Breakpoints for tilde_rho_i:');
-%             % disp(rho_breakpoints);
-% 
-% 
-% 
-% 
-% 
-%            % Collecting Constraints  
-%            constraints = [constraints, con7_2, con7_3, con8];
-%         end
-%     end
-% end
+        Ct = DG{i}.C;
+
+        if B_il(i,l) ~= 0
+       
+           % Constraint (66f)
+           tagName = ['rhoBar_',num2str(l),'_low1_',num2str(i)];
+           constraintTags{end+1} = tagName;
+           con7_2 = tag(rho_l{l} >= -(p_i{i}*nu_i{i})/(p_l{l}*Ct^2), tagName);
+           constraintMats{end+1} = -(p_i{i}*nu_i{i})/(p_l{l}*Ct^2);
+           
+           tagName = ['rhoBar_',num2str(l),'_low2_',num2str(i)];
+           constraintTags{end+1} = tagName;
+           con7_3 = tag(rho_l{l} >= ((rhoTilde_i{i})/(p_i{i}*p_l{l}))*((p_i{i}/(2*Ct))-(p_l{l}/2))^2, tagName);
+           constraintMats{end+1} = ((rhoTilde_i{i})/(p_i{i}*p_l{l}))*((p_i{i}/(2*Ct))-(p_l{l}/2))^2;
+                
+           constraints = [constraints, con7_2, con7_3];
+
+           if useNewCon8
+               % New con8 (66g):
+               tagName = ['nuBar_',num2str(l),'_low_',num2str(i)];
+               constraintTags{end+1} = tagName;
+               con8New = nu_l{l} >= -p_i{i}*rho_i{i}/p_l{l};
+               constraintMats{end+1} = -p_i{i}*rho_i{i}/p_l{l};
+           else
+               % Constraint (66g)lue
+               n = 1;          % Number of intervals
+               rho_max = min(p_i{i}, 4*BarGamma/p_i{i});
+               rho_min = rho_max/1000;
+    
+               delta_i = (rho_max - rho_min) / n;
+               
+               % con8Test{i,l} = nu_l{l} +  p_i{i}/(rhoTilde_i{i}*p_l{l}); % This needs to be positive for the global controller to be feasible
+    
+               % Initialize cell array to store individual constraints
+               con8 = [];
+    
+               % Loop over each k from 1 to n to create individual constraints
+               tilde_rho_i_prev = rho_min;
+               tilde_y_i_prev = -p_i{i} / (p_l{l} * tilde_rho_i_prev);
+                
+               for k = 1:n
+    
+                   % Compute tilde_rho_i^k
+                   tilde_rho_i_k = rho_min + k * delta_i;
+    
+                   % Compute tilde_y_i^k
+                   tilde_y_i_k = -p_i{i} / (p_l{l} * tilde_rho_i_k);
+    
+                   % Compute m_k and c_k
+                   m_k = (tilde_y_i_k - tilde_y_i_prev) / delta_i;
+                   c_k = tilde_y_i_k - m_k * tilde_rho_i_k;
+    
+                   % Define Constraint (66g)
+                   tagName = ['nuBar_',num2str(l),'_low',num2str(n),'_',num2str(i)];
+                   constraintTags{end+1} = tagName;
+                   con8_k = tag(nu_l{l} >= m_k * rhoTilde_i{i} + c_k, tagName);
+                   constraintMats{end+1} = m_k * rhoTilde_i{i} + c_k;
+    
+                   con8 = [con8, con8_k];
+                   
+                   % Compute tilde_rho_i^{k-1} and tilde_y_i^{k-1}
+                   tilde_rho_i_prev = tilde_rho_i_k;
+                   tilde_y_i_prev = tilde_y_i_k;
+               end
+           end
+
+           if useNewCon8
+               constraints = [constraints, con8New];
+           else
+               constraints = [constraints, con8];
+           end
+           
+        end
+    end
+end
 
 
 
@@ -263,14 +256,20 @@ end
 
 costGamma = 0;
 for  i = 1:numOfDGs
-    % costGamma = costGamma + gammaTilde_i{i};
-    costGamma = costGamma + (-nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i};
+    if useNewCon8
+        costGamma = costGamma + (-1000*nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i} + trace(P_i{i}) - 1000000*rho_i{i};
+    else
+        costGamma = costGamma + (-1000*nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i} + trace(P_i{i});
+    end
+end
+for l = 1:numOfLines
+    costGamma = costGamma + (-1000*nu_l{l}-rho_l{l}) + 1*trace(P_l{l});
 end
 
 % Defining costfunction
 costFunction = 1*costGamma; % Play with this choice
 
-solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1, 'debug', 0);
+solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0, 'debug', 0);
 
 sol = optimize(constraints, costFunction, solverOptions);
 
@@ -305,14 +304,55 @@ for l = 1:1:numOfLines
     Line{l}.rho = rho_lVal;
 end
 
-% for i = 1:1:numOfDGs
-%     for l = 1:1:numOfLines
-%         con8_il = value(con8Test{i,l});
-%         disp(['Con 8_',num2str(i),num2str(l),'=',num2str(con8_il)])
-%     end
-% end
+%% Display violated constraints by tag
+% Check feasibility
+if debugMode
+    feasibility = check(constraints);
+    
+    % Combine tags and feasibility into one array for sorting
+    combinedList = [feasibility(:), (1:length(feasibility))'];
+    
+    % Sort based on the first column (feasibility values)
+    sortedList = sortrows(combinedList, 1);  % Sort by feasibility, ascending order
+    
+    % Printing
+    for i = 1:length(sortedList)
+        idx = sortedList(i, 2);  % Get the original index of the constraint
+        if feasibility(idx) < -1e-6
+            disp(['Constraint "', constraintTags{idx}, '" is violated by ', num2str(feasibility(idx)), ' .']);
+            W_val = value(constraintMats{idx})
+            for j = 1:size(W_val, 1)
+                submatrix = W_val(1:j, 1:j);  % Extract principal minor
+                if det(submatrix) < 0
+                    disp(['Principal minor ', num2str(j), ' is not positive semi-definite.']);
+                end
+            end
+        else
+            disp(['Constraint "', constraintTags{idx}, '" is satisfied by ',num2str(feasibility(idx)),' .']);
+            W_val = value(constraintMats{idx})
+        end
+    end
 
+    % Checking the nonlinear constraint
+    for i = 1:1:numOfDGs
+        for l = 1:1:numOfLines
 
+            Ct = DG{i}.C;
 
+            if B_il(i,l) ~= 0
+                % del1_il = value(rho_l{l} +  p_i{i}*nu_i{i}/(Ct^2*p_l{l}))
+                nonLinCons = value(nu_l{l} +  p_i{i}/(rhoTilde_i{i}*p_l{l}))
+                del3 = value ( (rho_l{l}*Ct^2/(-nu_i{i})) - ((-nu_l{l})*rhoTilde_i{i}))
+                
+                T0 = Ct*(Ct*rho_l{l}/rhoTilde_i{i} + 2);
+                T1 = (-nu_l{l})*rhoTilde_i{i};
+                T2 = (-nu_i{i})/rho_l{l};
+                del4 = value(T0-(T1+T2))
+
+            end
+        end
+    end
+
+end
 
 end
