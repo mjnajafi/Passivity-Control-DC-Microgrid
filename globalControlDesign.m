@@ -235,7 +235,7 @@ Mat_55 =  -BarX_Barp_22;
 Mat_15 = [  X_p_11 * BarC;
             O_bar;
             O;   
-            -X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12    ];
+            -X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12];
 Mat_5 = [Mat_4, Mat_15;
         Mat_15', Mat_55];
 
