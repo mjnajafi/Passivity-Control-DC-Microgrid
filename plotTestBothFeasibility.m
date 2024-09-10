@@ -2,11 +2,11 @@ function plotTestBothFeasibility(DG, Line, B_il, BarGamma, A_ij, isSoft, numOfDG
     % Turn off all warnings
     warning off;
 
-    step_size = 1;
+    step_size = 0.5;
 
     % Define the correct range for piScalar and plScalar
-    piRange = 10.^(-5:step_size:5);  % Adjust the range as needed
-    plRange = 10.^(-5:step_size:5);  % Adjust the range as needed
+    piRange = 10.^(-7:step_size:7);  % Adjust the range as needed
+    plRange = 10.^(-7:step_size:7);  % Adjust the range as needed
 
     % Set the square size (length of each side of the square)
     squareSize = step_size;  % Adjust this size as needed

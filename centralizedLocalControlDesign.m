@@ -9,9 +9,9 @@ function [DG,Line,statusLocalController] = centralizedLocalControlDesign(DG,Line
 numOfDGs = size(B_il,1);
 numOfLines = size(B_il,2);
 
-epsilon = 0.001; % Minimum value
-useNewCon8 = 1;
-debugMode = 1;
+epsilon = 0.000001; % Minimum value
+useNewCon8 = 0;
+debugMode = 0;
 
 % Create LMI variables necessary for (66)
 %% Variables corresponding to DGs like P_i, K_i, nu_i, rhoTilde_i, gammaTilde_i
@@ -341,8 +341,13 @@ if debugMode
 
             if B_il(i,l) ~= 0
                 % del1_il = value(rho_l{l} +  p_i{i}*nu_i{i}/(Ct^2*p_l{l}))
-                del2_il = value(nu_l{l} +  p_i{i}/(rhoTilde_i{i}*p_l{l}))
+                nonLinCons = value(nu_l{l} +  p_i{i}/(rhoTilde_i{i}*p_l{l}))
                 del3 = value ( (rho_l{l}*Ct^2/(-nu_i{i})) - ((-nu_l{l})*rhoTilde_i{i}))
+                
+                T0 = Ct*(Ct*rho_l{l}/rhoTilde_i{i} + 2);
+                T1 = (-nu_l{l})*rhoTilde_i{i};
+                T2 = (-nu_i{i})/rho_l{l};
+                del4 = value(T0-(T1+T2))
 
             end
         end

@@ -257,7 +257,7 @@ end
 costGamma = 0;
 for  i = 1:numOfDGs
     if useNewCon8
-        costGamma = costGamma + (-1000*nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i} + trace(P_i{i}) - 1000*rho_i{i};
+        costGamma = costGamma + (-1000*nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i} + trace(P_i{i}) - 1000000*rho_i{i};
     else
         costGamma = costGamma + (-1000*nu_i{i}+rhoTilde_i{i}) + gammaTilde_i{i} + trace(P_i{i});
     end
@@ -340,9 +340,10 @@ if debugMode
             Ct = DG{i}.C;
 
             if B_il(i,l) ~= 0
-                del1_il = value(rho_l{l} +  p_i{i}/(rhoTilde_i{i}*p_l{l}))
-
-                del2_il = value(nu_l{l} +  p_i{i}/(rhoTilde_i{i}*p_l{l}))
+                % del1_il = value(rho_l{l} +  p_i{i}*nu_i{i}/(Ct^2*p_l{l}))
+                nonLinCons = value(nu_l{l} +  p_i{i}/(rhoTilde_i{i}*p_l{l}))
+                del3 = value ( (rho_l{l}*Ct^2/(-nu_i{i})) - ((-nu_l{l})*rhoTilde_i{i}))
+                del4 = value((rho_l{l}/rhoTilde_i{i}) - (((-nu_l{l})*rhoTilde_i{i}/(4*Ct^2))-(1/(2*Ct))+()));
 
             end
         end

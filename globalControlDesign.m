@@ -9,8 +9,8 @@ function [DG,Line,statusGlobalController,gammaTildeVal,K,C,BarC,H,P_iVal,P_lVal]
 
 numOfDGs = size(B_il,1);
 numOfLines = size(B_il,2);
-epsilon = 0.000000001; % Minimum value
-debugMode = 1;
+epsilon = 0.000001; % Minimum value
+debugMode = 0;
 
 %% Creating C , BarC , and H Matrices
 
@@ -260,7 +260,7 @@ Mat_6_Test2 = [Mat_44, (-X_21 * X_p_11);
                 (-X_21 * X_p_11)', Mat_66];
 
 
-W = Mat_4;
+W = Mat_6;
 
 tagName = ['W'];
 constraintTags{end+1} = tagName;
@@ -269,37 +269,37 @@ constraintMats{end+1} = W;
 
 constraints = [constraints, con4];
 
-% Temporary - 1:
-W_Temp = Mat_6_Test1;
-tagName = ['W_Temp_1'];
-constraintTags{end+1} = tagName;
-con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
-constraintMats{end+1} = W_Temp;
-constraints = [constraints, con4_Temp];
+% % Temporary - 1:
+% W_Temp = Mat_6_Test1;
+% tagName = ['W_Temp_Mat_6_Test1'];
+% constraintTags{end+1} = tagName;
+% con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
+% constraintMats{end+1} = W_Temp;
+% constraints = [constraints, con4_Temp];
+% 
+% % Temporary - 2:
+% W_Temp = Mat_6_Test2;
+% tagName = ['W_Temp_Mat_6_Test2'];
+% constraintTags{end+1} = tagName;
+% con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
+% constraintMats{end+1} = W_Temp;
+% constraints = [constraints, con4_Temp];
 
-% Temporary - 2:
-W_Temp = Mat_6_Test2;
-tagName = ['W_Temp_1'];
-constraintTags{end+1} = tagName;
-con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
-constraintMats{end+1} = W_Temp;
-constraints = [constraints, con4_Temp];
-
-% Temporary - 3:
-W_Temp = Mat_5_Test1;
-tagName = ['W_Temp_3'];
-constraintTags{end+1} = tagName;
-con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
-constraintMats{end+1} = W_Temp;
-constraints = [constraints, con4_Temp];
-
-% Temporary - 4:
-W_Temp = Mat_5_Test2;
-tagName = ['W_Temp_4'];
-constraintTags{end+1} = tagName;
-con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
-constraintMats{end+1} = W_Temp;
-constraints = [constraints, con4_Temp];
+% % Temporary - 3:
+% W_Temp = Mat_5_Test1;
+% tagName = ['W_Temp_Mat_5_Test1'];
+% constraintTags{end+1} = tagName;
+% con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
+% constraintMats{end+1} = W_Temp;
+% constraints = [constraints, con4_Temp];
+% 
+% % Temporary - 4:
+% W_Temp = Mat_5_Test2;
+% tagName = ['W_Temp_Mat_5_Test2'];
+% constraintTags{end+1} = tagName;
+% con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
+% constraintMats{end+1} = W_Temp;
+% constraints = [constraints, con4_Temp];
 
 % 49g and h (Mat_5_Test1 & 2) conflicts 49e (Mat_4_test1 & 2)
 
@@ -339,7 +339,7 @@ costFun0 = 1*norm(Q.*costMatBlock,normType);
 
 
 % Total Cost Function
-costFun = 1*costFun0 + 1*gammaTilde + 0*(gammaTilde-mean(diag(GammaMat)))^2; % soft %%% Play with this
+costFun = 1*costFun0 + 1000*gammaTilde; % soft %%% Play with this
 
 
 
@@ -442,6 +442,7 @@ if debugMode
             end
         else
             disp(['Constraint "', constraintTags{idx}, '" is satisfied by ',num2str(feasibility(idx)),' .']);
+            W_val = value(constraintMats{idx})
         end
     end
 
