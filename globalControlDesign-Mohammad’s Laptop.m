@@ -232,12 +232,8 @@ Mat6 = [X_p_11, O_N, O_n', Q, X_p_11 * BarC, X_p_11;
         BarC' * X_p_11', O_bar, O', -BarC' * X_p_11' * X_12 - BarX_21 * BarX_Barp_11 * C, -BarX_Barp_22, O_N';
         X_p_11, O_N, O_n', -X_p_11' * X_12, O_N, GammaTilde];
 
-Mat4_1 = [X_p_11 + 1e-6 * eye(size(X_p_11)), X_p_11 * BarC; 
-          BarC' * X_p_11', -BarX_Barp_22 + 1e-6 * eye(size(BarX_Barp_22))];
-
-% 
-% Mat4_1 = [X_p_11, zeros(12,4); 
-%                zeros(4,12), -BarX_Barp_22];
+Mat4_1 = [X_p_11, X_p_11 * BarC; 
+        BarC' * X_p_11', -BarX_Barp_22];
 % 
 % 
 % % Mat4_1 = [-BarX_Barp_22];
@@ -246,8 +242,8 @@ con4_1 = Mat4_1 >= 0;
 
 T = Mat4;            
 con4 = T >= 0;
-% constraints = [constraints, con4];
-constraints = [constraints, con4, con4_1];
+constraints = [constraints, con4];
+% constraints = [constraints, con4, con4_1];
 
 % Structural constraints
 con5 = Q.*(nullMatBlock==1) == O_3N;     % Structural limitations (due to the format of the control law)
@@ -311,7 +307,7 @@ T5ValEigs = eig(T5Val);
 P_iVal = diag(value(P_i));
 P_lVal = diag(value(P_l));
 
-% eig5 = cond(value(Mat4_1))
+eig5 = eig(Mat5)
 
 
 

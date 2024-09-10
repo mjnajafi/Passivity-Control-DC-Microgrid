@@ -113,59 +113,146 @@ for i = 1:1:numOfDGs
 
            
                 
-           % Constraint (66g)
-           epsilon = 0.001; % Minimum value
-           n = 10;          % Number of intervals
-           rho_min = epsilon;
-           rho_max = min(p_i{i}, 4*BarGamma/p_i{i})
-           delta_i = (rho_max - rho_min) / n;
-           
+           % % Constraint (66g)
+           % epsilon = 0.001; % Minimum value
+           % n = 100; % Number of intervals
+           % % rho_min = epsilon;
+           % rho_max = min(p_i{i}, 4*BarGamma/p_i{i});
+           % rho_min = rho_max/1000;
+           % delta_i = (rho_max - rho_min) / n;
+           % 
+           % 
+           % % con8Test{i,l} = nu_l{l} +  p_i{i}/(rhoTilde_i{i}*p_l{l}); % This needs to be positive for the global controller to be feasible
+           % 
+           % 
+           % % % Initialize cell array to store individual constraints
+           % con8 = [];
+           % 
+           % % Loop over each k from 1 to n to create individual constraints
+           % tilde_rho_i_prev = rho_min;
+           % tilde_y_i_prev = -p_i{i} / (p_l{l} * tilde_rho_i_prev);
+           % 
+           % for k = 1:n
+           % 
+           %     % Compute tilde_rho_i^k
+           %    tilde_rho_i_k = rho_min + k * delta_i;   
+           % 
+           %     % Compute tilde_y_i^k
+           %     tilde_y_i_k = -p_i{i} / (p_l{l} * tilde_rho_i_k);
+           % 
+           %     % Compute m_k and c_k
+           %     m_k = (tilde_y_i_k - tilde_y_i_prev) / delta_i;
+           %     c_k = tilde_y_i_k - m_k * tilde_rho_i_k;
+           % 
+           %     % % Define Constraint (66g)
+           %     if ~isnan(m_k)
+           %          con8_k = nu_l{l} >= m_k * rhoTilde_i{i} + c_k;
+           %          con8 = [con8, con8_k];
+           %     else
+           %     %     i
+           %     %     l
+           %     %     k
+           %          % delta_i
+           %     %      m_k
+           %     % end
+           % 
+           % 
+           %     % Compute tilde_rho_i^{k-1} and tilde_y_i^{k-1}
+           %     tilde_rho_i_prev = tilde_rho_i_k;
+           %     tilde_y_i_prev = tilde_y_i_k;
+           % 
+           % % end
 
-           % con8Test{i,l} = nu_l{l} +  p_i{i}/(rhoTilde_i{i}*p_l{l}); % This needs to be positive for the global controller to be feasible
+           % % Constraint (66g)
+           % epsilon = 0.001; % Minimum value
+           % rho_min = epsilon;
+           rho_max = min(p_i{i}, 4*BarGamma/p_i{i});
+           rho_min = rho_max/1000;
+           num_breakpoints = 100; % Desired number of breakpoints
 
+           % Generate breakpoints linearly spaced between rho_min and rho_max
+           rho_breakpoints = linspace(rho_min, rho_max, num_breakpoints);
 
-           % Initialize cell array to store individual constraints
-           con8 = [];
+           n = length(rho_breakpoints) - 1; % Number of segments
+           con8 = []; % Initialize constraint array
 
-           % Loop over each k from 1 to n to create individual constraints
-           tilde_rho_i_prev = rho_min;
-           tilde_y_i_prev = -p_i{i} / (p_l{l} * tilde_rho_i_prev);
+           % Loop through each segment defined by breakpoints
+           for j = 1:n
+               % Breakpoints
+               rho_left = rho_breakpoints(j);
+               rho_right = rho_breakpoints(j + 1);
 
-           for k = 1:n
+               % Evaluate the function at breakpoints
+               nu_left = -p_i{i} / (p_l{l} * rho_left);
+               nu_right = -p_i{i} / (p_l{l} * rho_right);
 
-               % Compute tilde_rho_i^k
-               tilde_rho_i_k = rho_min + (k - 1) * delta_i;
+                % Calculate the slope (m) and intercept (c) for linear approximation
+                m = (nu_right - nu_left) / (rho_right - rho_left);
+                c = nu_left - m * rho_left;
 
-               % Compute tilde_y_i^k
-               tilde_y_i_k = -p_i{i} / (p_l{l} * tilde_rho_i_k);
+                % Create constraints for the current segment
+                % For -p_i / (p_l * tilde_rho_i) < nu_l
+                % => nu_l >= m * tilde_rho_i + c
+                con8_k = nu_l{l} >= m * rhoTilde_i{i} + c;
 
-               % Compute m_k and c_k
-               m_k = (tilde_y_i_k - tilde_y_i_prev) / delta_i;
-               c_k = tilde_y_i_k - m_k * tilde_rho_i_k;
-
-               % % Define Constraint (66g)
-               % if ~isnan(m_k)
-               %      con8_k = nu_l{l} >= m_k * rhoTilde_i{i} + c_k;
-               %      con8 = [con8, con8_k];
-               % else
-               %     i
-               %     l
-               %     k
-                    % delta_i
-               %      m_k
-               % end
-
-
-               % Compute tilde_rho_i^{k-1} and tilde_y_i^{k-1}
-               tilde_rho_i_prev = tilde_rho_i_k;
-               tilde_y_i_prev = tilde_y_i_k;
-
+                % Append the constraints for the current segment
+                con8 = [con8, con8_k];
            end
-           % Collecting Constraints  
-               
-           constraints = [constraints, con7_2, con7_3, con8];
 
-             
+           % Add upper bound constraint for nu_l
+           con8_upper = nu_l{l} <= 0;
+           con8 = [con8, con8_upper];
+
+           % Display breakpoints for verification
+           disp('Breakpoints for tilde_rho_i:');
+           disp(rho_breakpoints);
+
+        
+            % 
+            % % Generate breakpoints
+            % rho_breakpoints = linspace(rho_min, rho_max, num_breakpoints);
+            % 
+            % n = length(rho_breakpoints) - 1; % Number of segments
+            % con8 = []; % Initialize constraint array
+            % 
+            % % Loop through each segment defined by breakpoints
+            % for j = 1:n
+            %     % Breakpoints
+            %     rho_left = rho_breakpoints(j);
+            %     rho_right = rho_breakpoints(j + 1);
+            % 
+            %     % Evaluate the function at breakpoints
+            %     nu_left = -p_i / (p_l * rho_left);
+            %     nu_right = -p_i / (p_l * rho_right);
+            % 
+            %     % Calculate the average slope (m) for linear approximation
+            %     avg_nu = (nu_left + nu_right) / 2; % Average value for a smoother transition
+            %     m = (nu_right - nu_left) / (rho_right - rho_left); % Original slope for reference
+            %     c = avg_nu - m * ((rho_left + rho_right) / 2); % Calculate intercept based on average
+            % 
+            %     % Create relaxed constraints
+            %     % Allowing for some slack in the constraint
+            %     slack = 0.1; % You can adjust this value to relax the constraint
+            %     con8_k = nu_l{l} >= m * rhoTilde_i{i} + c - slack; % Relaxed lower bound
+            % 
+            %     % Append the constraints for the current segment
+            %     con8 = [con8, con8_k];
+            % end
+            % 
+            % % Add upper bound constraint for nu_l
+            % con8_upper = nu_l{l} <= 0;
+            % con8 = [con8, con8_upper];
+            % 
+            % % Display breakpoints for verification
+            % disp('Breakpoints for tilde_rho_i:');
+            % disp(rho_breakpoints);
+
+
+
+
+
+           % Collecting Constraints  
+           constraints = [constraints, con7_2, con7_3, con8];
         end
     end
 end
@@ -183,7 +270,7 @@ end
 % Defining costfunction
 costFunction = 1*costGamma; % Play with this choice
 
-solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1, 'debug', 1);
+solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1, 'debug', 0);
 
 sol = optimize(constraints, costFunction, solverOptions);
 
@@ -229,4 +316,3 @@ end
 
 
 end
-
