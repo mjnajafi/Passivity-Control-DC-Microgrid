@@ -379,13 +379,13 @@ for i = 1:1:numOfDGs
     end
 end
 
-% Filter the K_ij values (weed out the ones with the smallest magnitudes)
-% filtering out extremely small interconnections
+% % Filter the K_ij values (weed out the ones with the smallest magnitudes)
+% % filtering out extremely small interconnections
 for i=1:1:numOfDGs
     for j=1:1:numOfDGs
         if i~=j
             if isSoft
-                K{i,j}(abs(K{i,j})<0.0001*maxNorm) = 0;                       
+                K{i,j}(abs(K{i,j})<10e-6*maxNorm) = 0;                       
             else
                 if A(j+1,i+1)==0
                     K{i,j} = zeros(3);
@@ -398,6 +398,7 @@ for i=1:1:numOfDGs
 
     end
 end
+
 
 % Load the K_ij values to the DGs
 for i = 1:1:numOfDGs
