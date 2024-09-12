@@ -334,8 +334,8 @@ end
 
 %% Objective Function
 normType = 2;
-costFun0 = 1*norm(Q.*costMatBlock,normType);
-% costFun0 = sum(sum(Q.*costMatBlock)); %%% Play with this
+% costFun0 = 1*norm(Q.*costMatBlock,normType);
+costFun0 = sum(sum(Q.*costMatBlock)); %%% Play with this
 
 
 % Total Cost Function
