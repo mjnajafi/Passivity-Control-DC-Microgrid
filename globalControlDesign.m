@@ -315,9 +315,7 @@ constraintMats{end+1} = Q;
 constraints = [constraints, con5];
 
 
-% Minimum Budget Constraints
-% con6 = costFun0 >= 0.001;  %%% Play with this
-% constraints = [constraints, con6];
+
 
 
 % Hard Graph Constraints (forcing K_ij = K_ji = 0 if i and j are not communication neighbors)
@@ -336,6 +334,12 @@ end
 normType = 2;
 % costFun0 = 1*norm(Q.*costMatBlock,normType);
 costFun0 = sum(sum(Q.*costMatBlock)); %%% Play with this
+
+% Additional constraint on costFun0
+% Minimum Budget Constraints
+con6 = costFun0 >= 0.1;  %%% Play with this
+constraints = [constraints, con6];
+
 
 
 % Total Cost Function
@@ -385,7 +389,7 @@ for i=1:1:numOfDGs
     for j=1:1:numOfDGs
         if i~=j
             if isSoft
-                K{i,j}(abs(K{i,j})<10e-6*maxNorm) = 0;                       
+                K{i,j}(abs(K{i,j})<0.01*maxNorm) = 0;                       
             else
                 if A(j+1,i+1)==0
                     K{i,j} = zeros(3);

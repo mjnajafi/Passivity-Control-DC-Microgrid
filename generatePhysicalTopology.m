@@ -5,7 +5,7 @@
 % the adjacency matrix representing connections between DGs, and the B_il matrix 
 % that describes the incidence relationship between DGs and the transmission lines.
 
-function [coords, adjMatrix, B_il] = generateMicrogridTopology(numOfDGs, threshold)
+function [coords, adjMatrix, B_il] = generatePhysicalTopology(numOfDGs, threshold)
     % Generate random points and visualize the microgrid topology.
     %
     % Inputs:
