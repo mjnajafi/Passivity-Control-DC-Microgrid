@@ -53,7 +53,8 @@ end
 
 %% Creating the adjacency matrix, null matrix, and cost matrix
 
-A = A_ij; % Adjacency matrix of the DG-DG communication topology
+A = A_ij; % Adjacency matrix of the DG-DG communication topology - Physical Topology
+% A = ones(numOfDGs) - eye(numOfDGs); % all-to-all communication topology
 
 adjMatBlock = cell(numOfDGs, numOfDGs);
 nullMatBlock = cell(numOfDGs, numOfDGs);
@@ -337,19 +338,21 @@ costFun0 = sum(sum(Q.*costMatBlock)); %%% Play with this
 
 % Additional constraint on costFun0
 % Minimum Budget Constraints
-con6 = costFun0 >= 0.1;  %%% Play with this
+con6 = costFun0 >= 0.01;  %%% Play with this
 constraints = [constraints, con6];
 
 
 
 % Total Cost Function
-costFun = 1*costFun0 + 1*gammaTilde; % soft %%% Play with this
+alpha = 2; 
+beta = 1;  
+costFun = alpha * costFun0 + beta * gammaTilde;
 
 
 
 %% Solve the LMI problem (47)
 
-solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0, 'debug', 0);
+solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1, 'debug', 0);
 
 sol = optimize(constraints,costFun,solverOptions);
 
@@ -391,7 +394,7 @@ for i=1:1:numOfDGs
             if isSoft
                 K{i,j}(abs(K{i,j})<0.01*maxNorm) = 0;                       
             else
-                if A(j+1,i+1)==0
+                if A(j,i)==0
                     K{i,j} = zeros(3);
                 end
             end
