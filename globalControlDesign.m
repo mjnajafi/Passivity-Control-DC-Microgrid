@@ -67,7 +67,7 @@ for i = 1:numOfDGs
             if A(j, i) == 1
                 adjMatBlock{i, j} = [0, 0, 0; 1, 1, 1; 0, 0, 0];
                 nullMatBlock{i, j} = [1, 1, 1; 0, 0, 0; 1, 1, 1];
-                costMatBlock{i, j} = 0.01 * [0, 0, 0; 1, 1, 1; 0, 0, 0]; %%% Play with this
+                costMatBlock{i, j} = 0.001 * [0, 0, 0; 1, 1, 1; 0, 0, 0]; %%% Play with this
             else
                 adjMatBlock{i, j} = [0, 0, 0; 0, 0, 0; 0, 0, 0];
                 nullMatBlock{i, j} = [1, 1, 1; 0, 0, 0; 1, 1, 1];
@@ -338,17 +338,19 @@ costFun0 = sum(sum(Q.*costMatBlock)); %%% Play with this
 
 % Additional constraint on costFun0
 % Minimum Budget Constraints
-con6 = costFun0 >= 0.01;  %%% Play with this
-constraints = [constraints, con6];
+con6 = costFun0 >= 10e-6;           % Add the con6 constraint
+constraints = [constraints, con6];  % Include con6 in the constraints
 
+if isSoft
+    alpha = 1;  % When isSoft is 1, emphasize communication cost
+else
+    alpha = 0;  % When isSoft is 0, exclude communication cost
+end
 
+beta = 1;       % Robustness - performance cost
 
 % Total Cost Function
-alpha = 2; 
-beta = 1;  
 costFun = alpha * costFun0 + beta * gammaTilde;
-
-
 
 %% Solve the LMI problem (47)
 
@@ -363,7 +365,9 @@ statusGlobalController = sol.problem == 0;
 P_iVal = diag(value(P_i));
 P_lVal = diag(value(P_l));
 
-gammaTildeVal = value(gammaTilde);
+gammaTildeVal = value(gammaTilde)
+costFun0Val = value(costFun0)
+
 QVal = value(Q);
 X_p_11Val = value(X_p_11);
 KVal = X_p_11Val \ QVal;
@@ -392,7 +396,7 @@ for i=1:1:numOfDGs
     for j=1:1:numOfDGs
         if i~=j
             if isSoft
-                K{i,j}(abs(K{i,j})<0.01*maxNorm) = 0;                       
+                K{i,j}(abs(K{i,j})<10e-3*maxNorm) = 0;                       
             else
                 if A(j,i)==0
                     K{i,j} = zeros(3);
