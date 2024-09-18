@@ -1,5 +1,5 @@
 % This Script plots all output of Simulation
-close all;
+% close all;
 fontsize=24;
 axiswidth=2;
 graphwidth=2;
