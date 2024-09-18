@@ -43,6 +43,7 @@ for i = 1:1:numOfDGs
     Bi = DG{i}.B;
     Ii = eye(size(Ai));
 
+    
     tagName = ['gammaTilde_',num2str(i),'_low'];
     constraintTags{end+1} = tagName;
     con0_1 = tag(gammaTilde_i{i} >= epsilon, tagName);
@@ -274,6 +275,47 @@ solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0, 'debug', 0);
 sol = optimize(constraints, costFunction, solverOptions);
 
 statusLocalController = sol.problem == 0;
+
+% for i = 1:numOfDGs
+%     % Get the numerical values for P_i and K_i
+%     P_iVal = value(P_i{i});  
+%     K_iVal = value(K_i{i});
+% 
+%     % Calculate K0 for each DG
+%     if P_iVal ~= 0  % Check to avoid division by zero
+%         DG{i}.K0 = K_iVal / P_iVal;  % K0 is defined as K_iVal divided by P_iVal
+%     else
+%         DG{i}.K0 = K_iVal;  % Keep original value if P_iVal is zero
+%     end
+% 
+%     % Calculate min and max of K0 before thresholding
+%     min_K0 = min(DG{i}.K0);
+%     max_K0 = max(DG{i}.K0);
+% 
+%     % Display the min and max values
+%     fprintf('DG %d: Min K0 = %.4f, Max K0 = %.4f\n', i, min_K0, max_K0);
+% 
+%     % Set threshold
+%     threshold = 0.999 * max_K0;  % Calculate the threshold
+%     fprintf('Threshold for DG %d: %.4f\n', i, threshold);  % Display threshold
+% 
+%     % Check conditions and assign zero if needed for each element
+%     for k = 1:length(DG{i}.K0)  % Iterate over the elements of K0
+%         if abs(DG{i}.K0(k)) < threshold  % Check condition based on threshold
+%             fprintf('Assigning DG %d, K0[%d] from %.4f to 0\n', i, k, DG{i}.K0(k));  % Debug output
+%             DG{i}.K0(k) = 0;  % Assign to zero
+%         end
+%     end
+% 
+%     % Display the updated K0 values for verification
+%     fprintf('Updated K0 for DG %d: ', i);
+%     disp(DG{i}.K0);
+% end
+
+
+
+
+
 
 
 %% Extract variable values

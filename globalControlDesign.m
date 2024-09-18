@@ -338,11 +338,11 @@ costFun0 = sum(sum(Q.*costMatBlock)); %%% Play with this
 
 % Additional constraint on costFun0
 % Minimum Budget Constraints
-con6 = costFun0 >= 10e-6;           % Add the con6 constraint
+con6 = costFun0 >= 10e-1;           % Add the con6 constraint
 constraints = [constraints, con6];  % Include con6 in the constraints
 
 if isSoft
-    alpha = 1;  % When isSoft is 1, emphasize communication cost
+    alpha = 100;  % When isSoft is 1, emphasize communication cost
 else
     alpha = 0;  % When isSoft is 0, exclude communication cost
 end
@@ -392,23 +392,40 @@ end
 
 % % Filter the K_ij values (weed out the ones with the smallest magnitudes)
 % % filtering out extremely small interconnections
+% for i=1:1:numOfDGs
+%     for j=1:1:numOfDGs
+%         if i~=j
+%             if isSoft
+%                 K{i,j}(abs(K{i,j})<10e-2*maxNorm) = 0;                       
+%             else
+%                 if A(j,i)==0
+%                     K{i,j} = zeros(3);
+%                 end
+%             end
+%         end
+% 
+%         K_ijMax = max(abs(K{i,j}(:)));
+%         K{i,j}(abs(K{i,j})<0.01*K_ijMax) = 0;
+% 
+%     end
+% end
+
 for i=1:1:numOfDGs
     for j=1:1:numOfDGs
-        if i~=j
-            if isSoft
-                K{i,j}(abs(K{i,j})<10e-3*maxNorm) = 0;                       
-            else
-                if A(j,i)==0
-                    K{i,j} = zeros(3);
-                end
+        if isSoft
+            K{i,j}(abs(K{i,j}) < 10e-2 * maxNorm) = 0;
+        else
+            if A(j,i) == 0
+                K{i,j} = zeros(3);
             end
         end
 
         K_ijMax = max(abs(K{i,j}(:)));
-        K{i,j}(abs(K{i,j})<0.01*K_ijMax) = 0;
+        K{i,j}(abs(K{i,j}) < 0.01 * K_ijMax) = 0;
 
     end
 end
+
 
 
 % Load the K_ij values to the DGs
