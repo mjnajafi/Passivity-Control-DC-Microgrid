@@ -55,6 +55,9 @@ end
 
 A = A_ij; % Adjacency matrix of the DG-DG communication topology - Physical Topology
 % A = ones(numOfDGs) - eye(numOfDGs); % all-to-all communication topology
+% A = zeros(numOfDGs); % all-to-all communication topology
+
+
 
 adjMatBlock = cell(numOfDGs, numOfDGs);
 nullMatBlock = cell(numOfDGs, numOfDGs);

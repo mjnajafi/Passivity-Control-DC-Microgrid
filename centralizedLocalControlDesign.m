@@ -270,6 +270,11 @@ end
 % Defining costfunction
 costFunction = 1*costGamma; % Play with this choice
 
+% Add a regularization term to penalize large controller gains
+for i = 1:numOfDGs
+    costFunction = costFunction + norm(K_i{i}, 'fro');  % Frobenius norm of the controller gain
+end
+
 solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0, 'debug', 0);
 
 sol = optimize(constraints, costFunction, solverOptions);
@@ -282,21 +287,18 @@ statusLocalController = sol.problem == 0;
 %     K_iVal = value(K_i{i});
 % 
 %     % Calculate K0 for each DG
-%     if P_iVal ~= 0  % Check to avoid division by zero
-%         DG{i}.K0 = K_iVal / P_iVal;  % K0 is defined as K_iVal divided by P_iVal
-%     else
-%         DG{i}.K0 = K_iVal;  % Keep original value if P_iVal is zero
-%     end
+% 
+%     DG{i}.K0 = K_iVal / P_iVal;  % K0 is defined as K_iVal divided by P_iVal
 % 
 %     % Calculate min and max of K0 before thresholding
-%     min_K0 = min(DG{i}.K0);
-%     max_K0 = max(DG{i}.K0);
+%     min_K0 = min(abs(DG{i}.K0));
+%     max_K0 = max(abs(DG{i}.K0));
 % 
 %     % Display the min and max values
 %     fprintf('DG %d: Min K0 = %.4f, Max K0 = %.4f\n', i, min_K0, max_K0);
 % 
 %     % Set threshold
-%     threshold = 0.999 * max_K0;  % Calculate the threshold
+%     threshold = 0.5 * max_K0;  % Calculate the threshold
 %     fprintf('Threshold for DG %d: %.4f\n', i, threshold);  % Display threshold
 % 
 %     % Check conditions and assign zero if needed for each element
@@ -311,8 +313,8 @@ statusLocalController = sol.problem == 0;
 %     fprintf('Updated K0 for DG %d: ', i);
 %     disp(DG{i}.K0);
 % end
-
-
+% 
+% 
 
 
 
@@ -330,6 +332,7 @@ for i = 1:1:numOfDGs
     % update DG
     DG{i}.P0 = P_iVal;
     DG{i}.K0 = K_iVal/P_iVal;
+    % DG{i}.K0 = DG{i}.K0 / max(1, max(abs(DG{i}.K0)));
     DG{i}.nu = nu_iVal;
     DG{i}.rho = rho_iVal;
     DG{i}.gammaTilde0 = gammaTilde_iVal;
