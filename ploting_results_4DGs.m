@@ -1,5 +1,5 @@
 % This Script plots all output of Simulation
-close all;
+% close all;
 fontsize=24;
 axiswidth=2;
 graphwidth=2;
@@ -27,7 +27,7 @@ set(x,'FontSize',fontsize,'FontName','Times New Roman');
 set(y,'FontSize',fontsize,'FontName','Times New Roman');
 set(l,'FontSize',20,'FontName','Times New Roman');
 set(gca,'FontSize',fontsize, 'LineWidth', axiswidth,'fontweight','bold',...
-    'xlim',[min_t max_t],'ylim',[47 48.5],'FontName','Times New Roman');
+    'xlim',[min_t max_t],'ylim',[46.5 49.5],'FontName','Times New Roman');
 %% DG Current
 figure(2)
 I1=plot(out.I(:,1),out.I(:,2),'-');
@@ -48,7 +48,7 @@ set(x,'FontSize',fontsize,'FontName','Times New Roman');
 set(y,'FontSize',fontsize,'FontName','Times New Roman');
 set(l,'FontSize',20,'FontName','Times New Roman');
 set(gca,'FontSize',fontsize, 'LineWidth', axiswidth,'fontweight','bold',...
-    'xlim',[min_t max_t],'ylim',[10 80], 'FontName','Times New Roman');
+    'xlim',[min_t max_t],'ylim',[10 100], 'FontName','Times New Roman');
 %% Line Current
 figure(3)
 i1=plot(out.i(:,1),out.i(:,2),'-');
@@ -102,5 +102,5 @@ set(Average,'LineWidth',graphwidth);
 set(y,'FontSize',fontsize,'FontName','Times New Roman');
 set(x,'FontSize',fontsize,'FontName','Times New Roman');
 set(gca,'FontSize',fontsize, 'LineWidth', axiswidth,'fontweight','bold',...
-    'xlim',[min_t max_t],'ylim',[47.2 48.8],'FontName','Times New Roman','xticklabel',[]);
+    'xlim',[min_t max_t],'ylim',[46 50],'FontName','Times New Roman','xticklabel',[]);
 hold on
