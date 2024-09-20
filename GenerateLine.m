@@ -8,8 +8,8 @@ function Line = GenerateLine(Rl0, Ll0)
 
     % Introduce more significant variations in line parameters
     % For example, vary parameters within a larger range
-    variationFactorRl = 0.4;  % 40% variation in line resistance
-    variationFactorLl = 0.3;  % 30% variation in line inductance
+    variationFactorRl = 0.1;  % 40% variation in line resistance
+    variationFactorLl = 0.2;  % 30% variation in line inductance
 
     % Generate new values for the line parameters with larger variations
     Rl = Rl0 * (1 + variationFactorRl * (2*rand() - 1));  
