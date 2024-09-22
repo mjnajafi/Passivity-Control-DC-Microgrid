@@ -341,7 +341,7 @@ costFun0 = sum(sum(Q.*costMatBlock)); %%% Play with this
 
 % Additional constraint on costFun0
 % Minimum Budget Constraints
-con6 = costFun0 >= 10e-1;           % Add the con6 constraint
+con6 = costFun0 >= 0.5;           % Add the con6 constraint
 constraints = [constraints, con6];  % Include con6 in the constraints
 
 if isSoft

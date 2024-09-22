@@ -1,5 +1,5 @@
 % This Script plots all output of Simulation
-% close all;
+close all;
 fontsize=24;
 axiswidth=2;
 graphwidth=2;
@@ -93,14 +93,16 @@ set(gca,'FontSize',fontsize, 'LineWidth', axiswidth,'fontweight','bold',...
     'xlim',[min_t max_t],'ylim',[0.9 1.1],'FontName','Times New Roman');
 %% Average Voltage
 figure(5)
-Average=plot(out.Ave(:,1),out.Ave(:,2),'-');
+AveVoltage=plot(out.Ave(:,1),out.Ave(:,2),'-');
+hold on
+RefVoltage=plot(out.V(:,1),out.V(:,6));
 y=ylabel('\bf Average Voltage(V)');
 x=xlabel('\bf Time(sec)'); 
 grid on
-set(Average,'LineWidth',graphwidth);
-% set(x,'FontSize',fontsize,'FontName','Times New Roman');
-set(y,'FontSize',fontsize,'FontName','Times New Roman');
+set(AveVoltage,'LineWidth',graphwidth);
+set(RefVoltage,'LineWidth',graphwidth);
 set(x,'FontSize',fontsize,'FontName','Times New Roman');
+set(y,'FontSize',fontsize,'FontName','Times New Roman');
 set(gca,'FontSize',fontsize, 'LineWidth', axiswidth,'fontweight','bold',...
-    'xlim',[min_t max_t],'ylim',[46 50],'FontName','Times New Roman','xticklabel',[]);
+    'xlim',[min_t max_t],'ylim',[0 60],'FontName','Times New Roman');
 hold on
