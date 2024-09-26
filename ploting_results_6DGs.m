@@ -1,6 +1,6 @@
 % This Script plots all output of Simulation
 close all;
-fontsize=24;
+fontsize=35;
 axiswidth=2;
 graphwidth=2;
 min_t=0;
@@ -149,7 +149,7 @@ set(V7,'LineWidth',graphwidth);
 set(y,'FontSize',fontsize,'FontName','Times New Roman');
 % set(l,'FontSize',20,'FontName','Times New Roman');
 set(gca,'FontSize',fontsize, 'LineWidth', axiswidth,'fontweight','bold',...
-    'xlim',[min_t max_t],'ylim',[46 50],'FontName','Times New Roman');
+    'xlim',[min_t max_t],'ylim',[46 50],'FontName','Times New Roman','xticklabel',[]);
 
 subplot(212) 
 
@@ -172,8 +172,8 @@ set(p3,'LineWidth',graphwidth);
 set(p4,'LineWidth',graphwidth);
 set(p5,'LineWidth',graphwidth);
 set(p6,'LineWidth',graphwidth);
-set(x,'FontSize',48,'FontName','Times New Roman');
+set(x,'FontSize',fontsize,'FontName','Times New Roman');
 set(y,'FontSize',fontsize,'FontName','Times New Roman');
-set(l,'FontSize',20,'FontName','Times New Roman');
+set(l,'FontSize',30,'FontName','Times New Roman');
 set(gca,'FontSize',fontsize, 'LineWidth', axiswidth,'fontweight','bold',...
     'xlim',[min_t max_t],'ylim',[0.9 1.1],'FontName','Times New Roman');

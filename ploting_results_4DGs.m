@@ -1,6 +1,6 @@
 % This Script plots all output of Simulation
-close all;
-fontsize=24;
+% close all;
+fontsize=35;
 axiswidth=2;
 graphwidth=2;
 min_t=0;
@@ -95,14 +95,88 @@ set(gca,'FontSize',fontsize, 'LineWidth', axiswidth,'fontweight','bold',...
 figure(5)
 AveVoltage=plot(out.Ave(:,1),out.Ave(:,2),'-');
 hold on
-RefVoltage=plot(out.V(:,1),out.V(:,6));
+% RefVoltage=plot(out.V(:,1),out.V(:,6));
 y=ylabel('\bf Average Voltage(V)');
 x=xlabel('\bf Time(sec)'); 
 grid on
 set(AveVoltage,'LineWidth',graphwidth);
-set(RefVoltage,'LineWidth',graphwidth);
+% set(RefVoltage,'LineWidth',graphwidth);
 set(x,'FontSize',fontsize,'FontName','Times New Roman');
 set(y,'FontSize',fontsize,'FontName','Times New Roman');
 set(gca,'FontSize',fontsize, 'LineWidth', axiswidth,'fontweight','bold',...
     'xlim',[min_t max_t],'ylim',[0 60],'FontName','Times New Roman');
 hold on
+%% All Figures in one Fig. 
+
+
+figure(6)
+
+subplot(211)
+V1=plot(out.V(:,1), out.V(:,2), '-r'); 
+hold on;
+V2=plot(out.V(:,1), out.V(:,3), '--g'); 
+V3=plot(out.V(:,1), out.V(:,4), ':b'); 
+V4=plot(out.V(:,1), out.V(:,5), '-.m'); 
+V5=plot(out.V(:,1), out.V(:,6), '--c'); 
+y=ylabel('\bf Voltages(V)');
+% x=xlabel('\bf Time(sec)'); 
+l=legend({'\bf DG1','\bf DG2','\bf DG3','\bf DG4','\bf V_{r}'},...
+    'Location','southeast','Orientation','horizontal');
+grid on
+title('\bf (a)')
+set(V1,'LineWidth',graphwidth);
+set(V2,'LineWidth',graphwidth);
+set(V3,'LineWidth',graphwidth);
+set(V4,'LineWidth',graphwidth);
+set(V5,'LineWidth',graphwidth);
+% set(x,'FontSize',fontsize,'FontName','Times New Roman');
+set(y,'FontSize',fontsize,'FontName','Times New Roman');
+set(l,'FontSize',30,'FontName','Times New Roman');
+set(gca,'FontSize',fontsize, 'LineWidth', axiswidth,'fontweight','bold',...
+    'xlim',[min_t max_t],'ylim',[46 50],'FontName','Times New Roman','xticklabel',[]);
+
+% subplot(312) 
+% I1=plot(out.I(:,1), out.I(:,2), '-r'); 
+% hold on;
+% I2=plot(out.I(:,1), out.I(:,3), '--g'); 
+% I3=plot(out.I(:,1), out.I(:,4), ':b'); 
+% I4=plot(out.I(:,1), out.I(:,5), '-.m'); 
+% y=ylabel('\bf Currents(p.u.)');
+% % x=xlabel('\bf Time(sec)'); 
+% % l=legend({'\bf DG1','\bf DG2','\bf DG3','\bf DG4'},...
+%     % 'Location','southeast','Orientation','horizontal');
+% grid on
+% title('\bf (b)')
+% set(p1,'LineWidth',graphwidth);
+% set(p2,'LineWidth',graphwidth);
+% set(p3,'LineWidth',graphwidth);
+% set(p4,'LineWidth',graphwidth);
+% % set(x,'FontSize',48,'FontName','Times New Roman');
+% set(y,'FontSize',fontsize,'FontName','Times New Roman');
+% % set(l,'FontSize',20,'FontName','Times New Roman');
+% set(gca,'FontSize',fontsize, 'LineWidth', axiswidth,'fontweight','bold',...
+%     'xlim',[min_t max_t],'ylim',[0 100],'FontName','Times New Roman','xticklabel',[]);
+
+subplot(212) 
+p1=plot(out.P(:,1), out.P(:,2), '-r'); 
+hold on;
+p2=plot(out.P(:,1), out.P(:,3), '--g'); 
+p3=plot(out.P(:,1), out.P(:,4), ':b'); 
+p4=plot(out.P(:,1), out.P(:,5), '-.m'); 
+y=ylabel('\bf Currents(p.u.)');
+x=xlabel('\bf Time(sec)'); 
+% l=legend({'\bf DG1','\bf DG2','\bf DG3','\bf DG4'},...
+    % 'Location','southeast','Orientation','horizontal');
+grid on
+title('\bf (b)')
+set(p1,'LineWidth',graphwidth);
+set(p2,'LineWidth',graphwidth);
+set(p3,'LineWidth',graphwidth);
+set(p4,'LineWidth',graphwidth);
+set(x,'FontSize',fontsize,'FontName','Times New Roman');
+set(y,'FontSize',fontsize,'FontName','Times New Roman');
+% set(l,'FontSize',30,'FontName','Times New Roman');
+set(gca,'FontSize',fontsize, 'LineWidth', axiswidth,'fontweight','bold',...
+    'xlim',[min_t max_t],'ylim',[0.9 1.1],'FontName','Times New Roman');
+
+

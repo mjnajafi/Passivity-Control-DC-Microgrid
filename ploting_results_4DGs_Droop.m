@@ -1,6 +1,6 @@
 % This Script plots all output of Simulation
 close all;
-fontsize=24;
+fontsize=35;
 axiswidth=2;
 graphwidth=2;
 min_t=0;
