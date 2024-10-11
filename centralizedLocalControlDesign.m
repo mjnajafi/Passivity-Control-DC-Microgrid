@@ -102,6 +102,9 @@ for i = 1:1:numOfDGs
     con4_22 = tag(rhoTilde_i{i} <= 4*gammaTilde_i{i}/p_i{i}, tagName);
     constraintMats{end+1} = 4*gammaTilde_i{i}/p_i{i};
 
+
+ 
+
     % New con8:
     if useNewCon8
         tagName = ['rho_',num2str(i),'_low'];
@@ -126,6 +129,7 @@ for i = 1:1:numOfDGs
     else
         constraints = [constraints, con0_1, con0_2, con1, con2, con3_1, con3_2, con4_1, con4_21, con4_22];
     end
+
  end
 
 
@@ -270,10 +274,11 @@ end
 % Defining costfunction
 costFunction = 1*costGamma; % Play with this choice
 
-% Add a regularization term to penalize large controller gains
+% % % Add a regularization term to penalize large controller gains
 for i = 1:numOfDGs
-    costFunction = costFunction + norm(K_i{i}, 'fro');  % Frobenius norm of the controller gain
+    costFunction = costFunction + 1 * norm(K_i{i}, 'fro');  % Frobenius norm of the controller gain
 end
+
 
 solverOptions = sdpsettings('solver', 'mosek', 'verbose', 0, 'debug', 0);
 
@@ -331,11 +336,12 @@ for i = 1:1:numOfDGs
 
     % update DG
     DG{i}.P0 = P_iVal;
-    DG{i}.K0 = K_iVal/P_iVal;
+    DG{i}.K0 = (K_iVal/P_iVal);
     % DG{i}.K0 = DG{i}.K0 / max(1, max(abs(DG{i}.K0)));
     DG{i}.nu = nu_iVal;
     DG{i}.rho = rho_iVal;
     DG{i}.gammaTilde0 = gammaTilde_iVal;
+    
 end
 
 for l = 1:1:numOfLines
@@ -399,6 +405,4 @@ if debugMode
     end
 
 end
-
 end
-

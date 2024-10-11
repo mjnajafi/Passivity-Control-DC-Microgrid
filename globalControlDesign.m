@@ -106,6 +106,7 @@ P_l = sdpvar(numOfLines, numOfLines, 'diagonal');
 
 I_n = eye(3);
 
+
 X_p_11 = [];
 X_p_12 = [];
 X_12 = [];
@@ -334,6 +335,7 @@ if ~isSoft
 end
 
 
+
 %% Objective Function
 normType = 2;
 % costFun0 = 1*norm(Q.*costMatBlock,normType);
@@ -341,11 +343,11 @@ costFun0 = sum(sum(Q.*costMatBlock)); %%% Play with this
 
 % Additional constraint on costFun0
 % Minimum Budget Constraints
-con6 = costFun0 >= 0.5;           % Add the con6 constraint
+con6 = costFun0 >= 0.01;           % Add the con6 constraint
 constraints = [constraints, con6];  % Include con6 in the constraints
 
 if isSoft
-    alpha = 100;  % When isSoft is 1, emphasize communication cost
+    alpha = 10;  % When isSoft is 1, emphasize communication cost
 else
     alpha = 0;  % When isSoft is 0, exclude communication cost
 end
@@ -354,6 +356,9 @@ beta = 1;       % Robustness - performance cost
 
 % Total Cost Function
 costFun = alpha * costFun0 + beta * gammaTilde;
+
+
+
 
 %% Solve the LMI problem (47)
 
@@ -416,7 +421,7 @@ end
 for i=1:1:numOfDGs
     for j=1:1:numOfDGs
         if isSoft
-            K{i,j}(abs(K{i,j}) < 0.1 * maxNorm) = 0;
+            K{i,j}(abs(K{i,j}) < 0.01 * maxNorm) = 0;
         else
             if A(j,i) == 0
                 K{i,j} = zeros(3);
@@ -441,12 +446,11 @@ end
 
 % Load the K_ij values to the DGs
 for i = 1:numOfDGs
-    DG{i}.K = cell( 1,numOfDGs); % Initialize K as a cell array
+    DG{i}.K = cell(1,numOfDGs); % Initialize K as a cell array
     for j = 1:numOfDGs
         DG{i}.K{j} = K(i,j); % Use parentheses for numeric array indexing
     end
 end
-
 
 %% Debugging
 

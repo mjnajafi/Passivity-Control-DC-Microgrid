@@ -9,11 +9,11 @@ function DG = GenerateDG(R0, L0, C0, RL0, IL0, coords_i)
 
     % Introduce more significant variations in DG parameters
     % For example, vary parameters within a larger range
-    variationFactorR = 0.5;   % 50% variation in R
-    variationFactorL = 0.2;   % 20% variation in L
-    variationFactorC = 0.3;   % 30% variation in C
-    variationFactorRL = 0.4;  % 40% variation in RL
-    variationFactorIL = 0.3;  % 30% variation in IL
+    variationFactorR = 0.9;   % 50% variation in R
+    variationFactorL = 0.9;   % 20% variation in L
+    variationFactorC = 0.9;   % 30% variation in C
+    variationFactorRL = 0.9;  % 40% variation in RL
+    variationFactorIL = 0.9;  % 30% variation in IL
 
     % Generate new values for the parameters with larger variations
     Ri = R0 * (1 + variationFactorR * (2*rand() - 1));   
