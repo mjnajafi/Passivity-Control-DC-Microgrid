@@ -1,33 +1,22 @@
-% This function constructs the control matrices C, BarC, and H, and 
-% formulates the optimization problem with appropriate constraints and 
-% objective functions to ensure the stability and performance of the 
-% microgrid under a given communication topology defined by the adjacency 
-% matrix A_ij. The function also computes the optimal gain matrices K for 
-% each pair of DGs based on the optimization results.
+function [DG, Line, statusGlobalController, gammaTildeVal, K, C, BarC, H, Bar_H, P_iVal, P_lVal] = globalControlDesign(DG, Line, A_ij, B_il, BarGamma, isSoft)
 
-function [DG,Line,statusGlobalController,gammaTildeVal,K,C,BarC,H,P_iVal,P_lVal] = globalControlDesign(DG,Line,A_ij,B_il,BarGamma,isSoft)
-
-numOfDGs = size(B_il,1);
-numOfLines = size(B_il,2);
+numOfDGs = size(B_il, 1);
+numOfLines = size(B_il, 2);
 epsilon = 0.000001; % Minimum value
-debugMode = 0;
+debugMode = 0; % Set to 1 for detailed debugging output
 
-%% Creating C , BarC , and H Matrices
+%% Creating C, BarC, and H Matrices
 
-% Create C Matrix
+% Create C Matrix (L x 3N)
 C = zeros(numOfLines, numOfDGs * 3);
-
 for l = 1:numOfLines
     for i = 1:numOfDGs
         C(l, (i-1) * 3 + 1) = B_il(i, l);
     end
 end
 
-
-
-% Create BarC Matrix
+% Create BarC Matrix (3N x L)
 BarC = zeros(numOfDGs * 3, numOfLines);
-
 for i = 1:numOfDGs
     for l = 1:numOfLines
         Ct = DG{i}.C;
@@ -35,96 +24,101 @@ for i = 1:numOfDGs
     end
 end
 
+% Define dimensions for state spaces
+totalDGStates = 3 * numOfDGs;
+totalLineStates = numOfLines;
+totalOutputDim = totalDGStates + totalLineStates; % This is 3N+L
 
-% Create H Matrix
+% Create H matrix (output mapping for DGs) - 3N x 3N
+H = eye(totalDGStates);  % Identity matrix for DG states (eye(3) for each DG)
 
-H_i = [0, 0 , 1];
-H = [];
-for i = 1:numOfDGs
-    H = blkdiag(H, H_i);
+% Create Bar_H matrix (output mapping for Lines) - L x L
+Bar_H = eye(totalLineStates);  % Identity matrix for line states
+
+% Create H_c according to equation (70): H_c = [H; 0] - (3N+L) x 3N
+H_c = [H; zeros(totalLineStates, totalDGStates)];
+
+% Create Bar_H_c according to equation (70): Bar_H_c = [0; Bar_H] - (3N+L) x L
+Bar_H_c = [zeros(totalDGStates, totalLineStates); Bar_H];
+
+if debugMode
+    fprintf('H dimensions: [%d x %d]\n', size(H, 1), size(H, 2));
+    fprintf('Bar_H dimensions: [%d x %d]\n', size(Bar_H, 1), size(Bar_H, 2));
+    fprintf('H_c dimensions: [%d x %d]\n', size(H_c, 1), size(H_c, 2));
+    fprintf('Bar_H_c dimensions: [%d x %d]\n', size(Bar_H_c, 1), size(Bar_H_c, 2));
+    fprintf('Total output dimension: %d\n', totalOutputDim);
 end
-
-% GammaMat
-GammaMat = [];
-for i = 1:numOfDGs
-    GammaMat = blkdiag(GammaMat, DG{i}.gammaTilde0);
-end
-
 
 %% Creating the adjacency matrix, null matrix, and cost matrix
-
-A = A_ij; % Adjacency matrix of the DG-DG communication topology - Physical Topology
-% A = ones(numOfDGs) - eye(numOfDGs); % all-to-all communication topology
-% A = zeros(numOfDGs); % all-to-all communication topology
-
+A = A_ij; % Adjacency matrix of the DG-DG communication topology
 
 
 adjMatBlock = cell(numOfDGs, numOfDGs);
 nullMatBlock = cell(numOfDGs, numOfDGs);
 costMatBlock = cell(numOfDGs, numOfDGs);
 
+
 for i = 1:numOfDGs
     for j = 1:numOfDGs
-        % Structure of K_ij (which is a 3x3 matrix) should be embedded here
-        if i ~= j
+        if i ~= j  % Only for non-diagonal terms
             if A(j, i) == 1
-                adjMatBlock{i, j} = [0, 0, 0; 1, 1, 1; 0, 0, 0];
-                nullMatBlock{i, j} = [1, 1, 1; 0, 0, 0; 1, 1, 1];
-                costMatBlock{i, j} = 0.001 * [0, 0, 0; 1, 1, 1; 0, 0, 0]; %%% Play with this
+                % Structure for direct difference gains
+                adjMatBlock{i, j} = [0, 0, 0; 0, 1, 0; 0, 0, 0];
+                nullMatBlock{i, j} = [1, 1, 1; 1, 0, 1; 1, 1, 1];
+                % Cost based on physical distance
+                dist_ij = norm(DG{i}.coordinates - DG{j}.coordinates);
+                costMatBlock{i, j} = 0.5*dist_ij^2 * [0, 0, 0; 0, 1, 0; 0, 0, 0];
+                % costMatBlock{i, j} = zeros(3);
+                % costMatBlock{i, j} = (1 + 0.5*randn()) * [0, 0, 0; 0, 1, 0; 0, 0, 0];
+                % costMatBlock{i, j} = 1 * rand() * [0, 0, 0; 0, 1, 0; 0, 0, 0];
+                % costMatBlock{i, j} = (dist_ij^2 + 5*abs(i-j)) * [0, 0, 0; 0, 1, 0; 0, 0, 0];
+
             else
-                adjMatBlock{i, j} = [0, 0, 0; 0, 0, 0; 0, 0, 0];
-                nullMatBlock{i, j} = [1, 1, 1; 0, 0, 0; 1, 1, 1];
-                dist_ij = norm(DG{i}.coordinates - DG{j}.coordinates);  % In platoons: (20 / numOfDGs) * abs(i - j) 
-                costMatBlock{i, j} = dist_ij * [0, 0, 0; 1, 1, 1; 0, 0, 0]; %%% Play with this
+                % Non-connected DGs
+                adjMatBlock{i, j} = zeros(3);
+                nullMatBlock{i, j} = [1, 1, 1; 1, 0, 1; 1, 1, 1];
+                dist_ij = norm(DG{i}.coordinates - DG{j}.coordinates);
+                costMatBlock{i, j} = dist_ij^2 * [0, 0, 0; 0, 1, 0; 0, 0, 0];
             end
         else
-            adjMatBlock{i, j} = [0, 0, 0; 1, 1, 1; 0, 0, 0];
-            nullMatBlock{i, j} = [1, 1, 1; 0, 0, 0; 1, 1, 1];
-            costMatBlock{i, j} = 0 * [0, 0, 0; 1, 1, 1; 0, 0, 0]; %%% Play with this
+            % Diagonal terms (i == j) - all zero as we don't need self-gains
+            adjMatBlock{i, j} = zeros(3);
+            nullMatBlock{i, j} = ones(3);  % Force diagonal blocks to be zero
+            costMatBlock{i, j} = zeros(3);
         end
-    end 
+    end
 end
 
-%%%% Comment: Use the following variable.
-adjMatBlock = cell2mat(adjMatBlock);  %%% This is only for enforcing hard garaph constraints
-nullMatBlock = cell2mat(nullMatBlock); %%% This is needed in any case as it is a structural constraint
-costMatBlock = cell2mat(costMatBlock);   %%% Note that this matrix contains the c_ij information required for the objective function (46a)
+adjMatBlock = cell2mat(adjMatBlock);
+nullMatBlock = cell2mat(nullMatBlock);
+costMatBlock = cell2mat(costMatBlock);
 
-
-%% Variables corresponding to DGs like 
-
-I = eye(3*numOfDGs);
-I_N = eye(numOfDGs);
+%% Variables corresponding to DGs and lines
 gammaTilde = sdpvar(1, 1,'full');
-GammaTilde = gammaTilde*I;
 
 Q = sdpvar(3*numOfDGs, 3*numOfDGs, 'full'); 
 
 P_i = sdpvar(numOfDGs, numOfDGs, 'diagonal');
-
 P_l = sdpvar(numOfLines, numOfLines, 'diagonal');
 
 I_n = eye(3);
-
 
 X_p_11 = [];
 X_p_12 = [];
 X_12 = [];
 X_p_22 = [];
-for i = 1:1:numOfDGs
-          
+for i = 1:numOfDGs     
     nu_i = DG{i}.nu;
     rho_i = DG{i}.rho;
 
-    % For DGs, according to equation (33), numOfInouts = numOfOutputs = 3
-    X_i_11 = -nu_i*I_n;    %inputs x inputs
-    X_i_12 = 0.5*I_n;      %inputs x outputs
-    X_i_22 = -rho_i*I_n;   %outputs x outputs
+    % For DGs, according to equation (73)
+    X_i_11 = -nu_i*I_n;    % inputs x inputs
+    X_i_12 = 0.5*I_n;      % inputs x outputs
+    X_i_22 = -rho_i*I_n;   % outputs x outputs
 
     X_p_11 = blkdiag(X_p_11, P_i(i,i)*X_i_11);
     X_p_12 = blkdiag(X_p_12, P_i(i,i)*X_i_12);
     X_p_22 = blkdiag(X_p_22, P_i(i,i)*X_i_22);
-    
     X_12 = blkdiag(X_12, (-1 / (2 * nu_i)) * I_n);
 end
 X_p_21 = X_p_12';
@@ -137,34 +131,211 @@ BarX_Barp_12 = [];
 BarX_12 = [];
 BarX_Barp_22 = [];
 
-for l = 1:1:numOfLines
-    
+for l = 1:numOfLines
     nu_l = Line{l}.nu;
     rho_l = Line{l}.rho;
 
-    % For Lines, according to equation (31), numOfInputs = numOfOutputs = 1
-    BarX_l_11 = -nu_l*I_bar;    %inputs x inputs
-    BarX_l_12 = 0.5*I_bar;      %inputs x outputs
-    BarX_l_22 = -rho_l*I_bar;   %outputs x outputs
+    % For Lines, according to equation (74)
+    BarX_l_11 = -nu_l*I_bar;    % inputs x inputs
+    BarX_l_12 = 0.5*I_bar;      % inputs x outputs
+    BarX_l_22 = -rho_l*I_bar;   % outputs x outputs
 
     BarX_Barp_11 = blkdiag(BarX_Barp_11, P_l(l,l)*BarX_l_11);
     BarX_Barp_12 = blkdiag(BarX_Barp_12, P_l(l,l)*BarX_l_12);
     BarX_Barp_22 = blkdiag(BarX_Barp_22, P_l(l,l)*BarX_l_22);
     
     BarX_12 = blkdiag(BarX_12, (-1 / (2 * nu_l)) * I_bar);
-    
 end
 BarX_Barp_21 = BarX_Barp_12';
 BarX_21 = BarX_12';
 
+%% Define disturbance matrices E and Ebar for DGs and Lines
+% Build individual disturbance matrices for DGs
+E = [];
+for i = 1:numOfDGs
+    C_ti = DG{i}.C;
+    L_ti = DG{i}.L;
+    E_i = diag([1/C_ti, 1/L_ti, 1]);
+    
+    % Store E_i in the DG structure
+    DG{i}.E = E_i;
+    
+    E = blkdiag(E, E_i);
+end
 
+% Build individual disturbance matrices for Lines
+Ebar = [];
+for l = 1:numOfLines
+    L_l = Line{l}.L;
+    Ebar_l = 1/L_l;
+    
+    % Store Ebar_l in the Line structure
+    Line{l}.Ebar = Ebar_l;
+    
+    Ebar = blkdiag(Ebar, Ebar_l);
+end
+
+% Define E_c and Ebar_c as in equation (69)
+E_c = [E, zeros(size(E,1), size(Ebar,2))];
+Ebar_c = [zeros(size(Ebar,1), size(E,2)), Ebar];
+
+%% Construct the LMI matrix W following equation (80)
+
+% Block (1,1): X_p_11 (3N x 3N)
+W11 = X_p_11;
+
+% Block (1,2): 0 (3N x L)
+W12 = zeros(totalDGStates, totalLineStates);
+
+% Block (2,1): 0 (L x 3N)
+W21 = zeros(totalLineStates, totalDGStates);
+
+% Block (2,2): BarX_Barp_11 (L x L)
+W22 = BarX_Barp_11;
+
+% Block (1,3): 0 (3N x (3N+L))
+W13 = zeros(totalDGStates, totalOutputDim);
+
+% Block (2,3): 0 (L x (3N+L))
+W23 = zeros(totalLineStates, totalOutputDim);
+
+% Block (3,1): 0 ((3N+L) x 3N)
+W31 = zeros(totalOutputDim, totalDGStates);
+
+% Block (3,2): 0 ((3N+L) x L)
+W32 = zeros(totalOutputDim, totalLineStates);
+
+% Block (3,3): I ((3N+L) x (3N+L))
+W33 = eye(totalOutputDim);
+
+% Block (1,4): Q (3N x 3N)
+W14 = Q;
+
+% Block (2,4): BarX_Barp_11 * C (L x 3N)
+W24 = BarX_Barp_11 * C;
+
+% Block (3,4): H_c ((3N+L) x 3N) 
+W34 = H_c;
+
+% Block (4,1): Q' (3N x 3N)
+W41 = Q';
+
+% Block (4,2): C' * BarX_Barp_11' (3N x L)
+W42 = C' * BarX_Barp_11';
+
+% Block (4,3): H_c' (3N x (3N+L))
+W43 = H_c';
+
+% Block (4,4): -Q' * X_12 - X_21 * Q - X_p_22 (3N x 3N)
+W44 = -Q' * X_12 - X_21 * Q - X_p_22;
+
+% Block (1,5): X_p_11 * BarC (3N x L)
+W15 = X_p_11 * BarC;
+
+% Block (2,5): 0 (L x L)
+W25 = zeros(totalLineStates, totalLineStates);
+
+% Block (3,5): Bar_H_c ((3N+L) x L) 
+W35 = Bar_H_c;
+
+% Block (4,5): -X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12 (3N x L)
+W45 = -X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12;
+
+% Block (5,1): (X_p_11 * BarC)' (L x 3N)
+W51 = (X_p_11 * BarC)';
+
+% Block (5,2): 0 (L x L)
+W52 = zeros(totalLineStates, totalLineStates);
+
+% Block (5,3): Bar_H_c' (L x (3N+L))
+W53 = Bar_H_c';
+
+% Block (5,4): (-X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12)' (L x 3N)
+W54 = W45';
+
+% Block (5,5): -BarX_Barp_22 (L x L)
+W55 = -BarX_Barp_22;
+
+% Create the disturbance-related gamma block
+distSize = size(E_c, 2);
+Gamma_tilde = gammaTilde * eye(distSize);
+
+% Block (1,6): X_p_11 * E_c (3N x DistSize)
+W16 = X_p_11 * E_c;
+
+% Block (2,6): BarX_Barp_11 * Ebar_c (L x DistSize)
+W26 = BarX_Barp_11 * Ebar_c;
+
+% Block (3,6): 0 ((3N+L) x DistSize)
+W36 = zeros(totalOutputDim, distSize);
+
+% Block (4,6): -X_21 * X_p_11 * E_c (3N x DistSize)
+W46 = -X_21 * X_p_11 * E_c;
+
+% Block (5,6): -BarX_21 * BarX_Barp_11 * Ebar_c (L x DistSize)
+W56 = -BarX_21 * BarX_Barp_11 * Ebar_c;
+
+% Block (6,1): (X_p_11 * E_c)' (DistSize x 3N)
+W61 = W16';
+
+% Block (6,2): (BarX_Barp_11 * Ebar_c)' (DistSize x L)
+W62 = W26';
+
+% Block (6,3): 0 (DistSize x (3N+L))
+W63 = zeros(distSize, totalOutputDim);
+
+% Block (6,4): (-X_21 * X_p_11 * E_c)' (DistSize x 3N)
+W64 = W46';
+
+% Block (6,5): (-BarX_21 * BarX_Barp_11 * Ebar_c)' (DistSize x L)
+W65 = W56';
+
+% Block (6,6): Gamma_tilde (DistSize x DistSize)
+W66 = Gamma_tilde;
+
+% Assemble the blocks into W
+W = [
+    W11, W12, W13, W14, W15, W16;
+    W21, W22, W23, W24, W25, W26;
+    W31, W32, W33, W34, W35, W36;
+    W41, W42, W43, W44, W45, W46;
+    W51, W52, W53, W54, W55, W56;
+    W61, W62, W63, W64, W65, W66
+];
+
+if debugMode
+    % Print dimensions of each block
+    fprintf('\n---- Block Dimensions Check ----\n');
+    fprintf('W11 (X_p_11): [%d x %d] - Should be [%d x %d]\n', size(W11), totalDGStates, totalDGStates);
+    fprintf('W12 (0): [%d x %d] - Should be [%d x %d]\n', size(W12), totalDGStates, totalLineStates);
+    fprintf('W13 (0): [%d x %d] - Should be [%d x %d]\n', size(W13), totalDGStates, totalOutputDim);
+    fprintf('W14 (Q): [%d x %d] - Should be [%d x %d]\n', size(W14), totalDGStates, totalDGStates);
+    fprintf('W15 (X_p_11*BarC): [%d x %d] - Should be [%d x %d]\n', size(W15), totalDGStates, totalLineStates);
+    
+    fprintf('W31 (0): [%d x %d] - Should be [%d x %d]\n', size(W31), totalOutputDim, totalDGStates);
+    fprintf('W33 (I): [%d x %d] - Should be [%d x %d]\n', size(W33), totalOutputDim, totalOutputDim);
+    fprintf('W34 (H_c): [%d x %d] - Should be [%d x %d]\n', size(W34), totalOutputDim, totalDGStates);
+    fprintf('W35 (Bar_H_c): [%d x %d] - Should be [%d x %d]\n', size(W35), totalOutputDim, totalLineStates);
+    
+    fprintf('W44: [%d x %d] - Should be [%d x %d]\n', size(W44), totalDGStates, totalDGStates);
+    
+    fprintf('Final W: [%d x %d]\n', size(W));
+end
 
 %% Constraints 
 constraints = [];
 constraintTags = {}; % Cell array to hold tags
 constraintMats = {}; % Cell array to hold matrices
 
-% Constraints in (46b)
+% constraints = [constraints,
+%     norm(Q, 'fro') <= 1e4,
+%     norm(P_i, 'fro') <= 1e4,
+%     norm(P_l, 'fro') <= 1e4,
+%     norm(gammaTilde, 'fro') <= 1e4  % Changed from GammaTilde to gammaTilde
+% ];
+
+
+% Constraints 
 for i = 1:numOfDGs
     tagName = ['P_',num2str(i),num2str(i)];
     constraintTags{end+1} = tagName;
@@ -174,7 +345,7 @@ for i = 1:numOfDGs
     constraints = [constraints, con1];
 end
 
-% Constraints in (46c)
+% Constraints 
 for l = 1:numOfLines
     tagName = ['PBar_',num2str(l),num2str(l)];
     constraintTags{end+1} = tagName;
@@ -197,231 +368,127 @@ constraintMats{end+1} = gammaTilde;
 
 constraints = [constraints, con3_1, con3_2];
 
-% Constraint in (47)
-O_n = zeros(numOfDGs, 3*numOfDGs);
-O_bar = zeros(numOfLines);
-O_N = zeros(3*numOfDGs, numOfLines);
-O = zeros(numOfDGs, numOfLines);
-O_3N = zeros(3*numOfDGs);
-
-Mat_11 = X_p_11; 
-Mat_1 = [Mat_11];
- 
-
-Mat_22 = BarX_Barp_11;
-Mat_12 = O_N;
-Mat_2 = [Mat_1, Mat_12;
-        Mat_12', Mat_22];
-
-
-Mat_33 = I_N;
-Mat_13 = [  O_n';
-            O'      ];
-Mat_3 = [Mat_2, Mat_13;
-        Mat_13', Mat_33];
-
-
-Mat_44 = -Q' * X_12 - X_21 * Q - X_p_22;
-Mat_14 = [  Q;  
-            BarX_Barp_11 * C;  
-            H                   ];
-Mat_4 = [Mat_3, Mat_14;
-        Mat_14', Mat_44];
-
-Mat_4_Test1 = [ Mat_11, Q;
-                Q', Mat_44];
-Mat_4_Test2 = [ Mat_22, BarX_Barp_11 * C;
-                (BarX_Barp_11 * C)', Mat_44];
-Mat_4_Test3 = [ Mat_33, H;
-                H', Mat_44];
-
-
-Mat_55 =  -BarX_Barp_22;
-Mat_15 = [  X_p_11 * BarC;
-            O_bar;
-            O;   
-            -X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12];
-Mat_5 = [Mat_4, Mat_15;
-        Mat_15', Mat_55];
-
-Mat_5_Test1 = [Mat_11, (X_p_11 * BarC);
-               (X_p_11 * BarC)', Mat_55];
-Mat_5_Test2 = [Mat_44, (-X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12);
-               (-X_21 * X_p_11 * BarC - C' * BarX_Barp_11' * BarX_12)', Mat_55];
-
-
-Mat_66 = GammaTilde;
-Mat_16 = [  X_p_11;
-            O_N';
-            O_n;
-            -X_21 * X_p_11;
-            O_N'    ];
-Mat_6 = [Mat_5, Mat_16;
-        Mat_16', Mat_66];
-
-Mat_6_Test1 = [Mat_11, X_p_11;
-                X_p_11', Mat_66];
-Mat_6_Test2 = [Mat_44, (-X_21 * X_p_11);
-                (-X_21 * X_p_11)', Mat_66];
-
-
-W = Mat_6;
-
+% Main LMI constraint in equation (80)
+slack_W = sdpvar(size(W,1), size(W,1), 'symmetric');
 tagName = ['W'];
 constraintTags{end+1} = tagName;
-con4 = tag(W >= epsilon*eye(size(W)), tagName);
+con4 = tag(W + slack_W >= epsilon, 'W');
 constraintMats{end+1} = W;
-
 constraints = [constraints, con4];
 
-% % Temporary - 1:
-% W_Temp = Mat_6_Test1;
-% tagName = ['W_Temp_Mat_6_Test1'];
-% constraintTags{end+1} = tagName;
-% con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
-% constraintMats{end+1} = W_Temp;
-% constraints = [constraints, con4_Temp];
-% 
-% % Temporary - 2:
-% W_Temp = Mat_6_Test2;
-% tagName = ['W_Temp_Mat_6_Test2'];
-% constraintTags{end+1} = tagName;
-% con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
-% constraintMats{end+1} = W_Temp;
-% constraints = [constraints, con4_Temp];
-
-% % Temporary - 3:
-% W_Temp = Mat_5_Test1;
-% tagName = ['W_Temp_Mat_5_Test1'];
-% constraintTags{end+1} = tagName;
-% con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
-% constraintMats{end+1} = W_Temp;
-% constraints = [constraints, con4_Temp];
-% 
-% % Temporary - 4:
-% W_Temp = Mat_5_Test2;
-% tagName = ['W_Temp_Mat_5_Test2'];
-% constraintTags{end+1} = tagName;
-% con4_Temp = tag(W_Temp >= epsilon*eye(size(W_Temp)), tagName);
-% constraintMats{end+1} = W_Temp;
-% constraints = [constraints, con4_Temp];
-
-% 49g and h (Mat_5_Test1 & 2) conflicts 49e (Mat_4_test1 & 2)
+% Add auxiliary constraints for numerical stability
+% constraints = [constraints,
+%     slack_W >= 0,
+%     trace(slack_W) <= 1e2
+% ];
+constraints = [constraints, slack_W >= 0];
 
 
-
-
-% Structural constraints
+% Structural constraints for controller form
 tagName = ['Q_Structure'];
 constraintTags{end+1} = tagName;
-con5 = tag(Q.*(nullMatBlock==1) == O_3N, tagName);     % Structural limitations (due to the format of the control law)
+con5 = tag(Q.*(nullMatBlock==1) == zeros(size(Q)), tagName);
 constraintMats{end+1} = Q;
-
 constraints = [constraints, con5];
 
-
-
-
-
-% Hard Graph Constraints (forcing K_ij = K_ji = 0 if i and j are not communication neighbors)
+% Hard Graph Constraints if needed
 if ~isSoft
-    % Follow strictly the given communication tpology (by A_ij adjacency matrix)
     tagName = ['Q_Topology'];
     constraintTags{end+1} = tagName;
-    con7 = tag(Q.*(adjMatBlock==0) == O_3N, tagName);      % Graph structure : hard constraint
+    con7 = tag(Q.*(adjMatBlock==0) == zeros(size(Q)), tagName);
     constraintMats{end+1} = Q;
-
-    constraints = [constraints, con7]; % With the hard graph constraint con7
+    constraints = [constraints, con7];
 end
-
-
 
 %% Objective Function
-normType = 2;
-% costFun0 = 1*norm(Q.*costMatBlock,normType);
-costFun0 = sum(sum(Q.*costMatBlock)); %%% Play with this
+costFun0 = sum(sum(Q.*costMatBlock));
 
-% Additional constraint on costFun0
 % Minimum Budget Constraints
-con6 = costFun0 >= 0.01;           % Add the con6 constraint
-constraints = [constraints, con6];  % Include con6 in the constraints
+con6 = costFun0 >= 0.01;
+constraints = [constraints, con6];
 
 if isSoft
-    alpha = 10;  % When isSoft is 1, emphasize communication cost
+    alpha = 100;  % When isSoft is 1, emphasize communication cost
 else
-    alpha = 0;  % When isSoft is 0, exclude communication cost
+    alpha = 0;    % When isSoft is 0, exclude communication cost
 end
 
-beta = 1;       % Robustness - performance cost
+beta = 0.005;       % Robustness - performance cost
+slackPenalty = 100;  % Weight for slack terms
+
+% lambda = 0.000001;  % Sparsity promotion factor - adjust as needed
+% L1_penalty = 0;
+% 
+% % Calculate L1 norm of the Q matrix elements where communication is allowed
+% for i = 1:numOfDGs
+%     for j = 1:numOfDGs
+%         if i ~= j  % Skip diagonal elements
+%             % Only consider the current-sharing elements (position 2,2 in each block)
+%             L1_penalty = L1_penalty + abs(Q(3*(i-1)+2, 3*(j-1)+2));
+%         end
+%     end
+% end
+
 
 % Total Cost Function
-costFun = alpha * costFun0 + beta * gammaTilde;
+% costFun = alpha * costFun0 + beta * gammaTilde + slackPenalty * norm(slack_W, 'fro');
+costFun = alpha * costFun0 + beta * gammaTilde + slackPenalty * trace(slack_W);
+% costFun = alpha * costFun0 + beta * gammaTilde + slackPenalty * trace(slack_W) + lambda * L1_penalty;
 
 
 
-
-%% Solve the LMI problem (47)
-
+%% Solve the LMI problem
 solverOptions = sdpsettings('solver', 'mosek', 'verbose', 1, 'debug', 0);
-
-sol = optimize(constraints,costFun,solverOptions);
+sol = optimize(constraints, costFun, solverOptions);
 
 statusGlobalController = sol.problem == 0;   
 
 %% Extract variable values
-
 P_iVal = diag(value(P_i));
 P_lVal = diag(value(P_l));
 
-gammaTildeVal = value(gammaTilde)
-costFun0Val = value(costFun0)
+gammaTildeVal = value(gammaTilde);
+costFun0Val = value(costFun0);
 
 QVal = value(Q);
 X_p_11Val = value(X_p_11);
 KVal = X_p_11Val \ QVal;
 
-
-
-
-% Load KVal elements into a cell structure K{i,j} (i.e., partitioning KVal
-% into N\times N blocks)
-% Obtaining K_ij blocks
+% Load KVal elements into a cell structure K{i,j}
 KVal(nullMatBlock == 1) = 0;
 maxNorm = 0;
-for i = 1:1:numOfDGs
-    for j = 1:1:numOfDGs
-        K{i,j} = KVal(3*(i-1)+1:3*i , 3*(j-1)+1:3*j); % (i,j)-th (3 x 3) block
+for i = 1:numOfDGs
+    for j = 1:numOfDGs
+        K{i,j} = KVal(3*(i-1)+1:3*i, 3*(j-1)+1:3*j);
         normVal = max(max(abs(K{i,j})));
-        if normVal>maxNorm 
+        if normVal > maxNorm 
             maxNorm = normVal;
         end
     end
 end
 
-% % Filter the K_ij values (weed out the ones with the smallest magnitudes)
-% % filtering out extremely small interconnections
-% for i=1:1:numOfDGs
-%     for j=1:1:numOfDGs
-%         if i~=j
-%             if isSoft
-%                 K{i,j}(abs(K{i,j})<10e-2*maxNorm) = 0;                       
-%             else
-%                 if A(j,i)==0
-%                     K{i,j} = zeros(3);
-%                 end
+% Filter out small gain values
+% for i = 1:numOfDGs
+%     for j = 1:numOfDGs
+%         if isSoft
+%             K{i,j}(abs(K{i,j}) < 0.001 * maxNorm) = 0;
+%         else
+%             if A(j,i) == 0
+%                 K{i,j} = zeros(3);
 %             end
 %         end
 % 
 %         K_ijMax = max(abs(K{i,j}(:)));
-%         K{i,j}(abs(K{i,j})<0.01*K_ijMax) = 0;
-% 
+%         if K_ijMax > 0
+%             K{i,j}(abs(K{i,j}) < 0.001 * K_ijMax) = 0;
+%         end
 %     end
 % end
 
 for i=1:1:numOfDGs
     for j=1:1:numOfDGs
         if isSoft
-            K{i,j}(abs(K{i,j}) < 0.01 * maxNorm) = 0;
+            K{i,j}(abs(K{i,j}) < 0.1 * maxNorm) = 0;
         else
             if A(j,i) == 0
                 K{i,j} = zeros(3);
@@ -429,102 +496,41 @@ for i=1:1:numOfDGs
         end
 
         K_ijMax = max(abs(K{i,j}(:)));
-        K{i,j}(abs(K{i,j}) < 0.01 * K_ijMax) = 0;
+        K{i,j}(abs(K{i,j}) < 0.1 * K_ijMax) = 0;
 
-    end
-end
-
-
-
-% Load the K_ij values to the DGs
-for i = 1:1:numOfDGs
-    for j = 1:1:numOfDGs
-        DG{i}.K{j} = K{i,j};  
-        % K = K{i,j};
     end
 end
 
 % Load the K_ij values to the DGs
 for i = 1:numOfDGs
-    DG{i}.K = cell(1,numOfDGs); % Initialize K as a cell array
+    DG{i}.K = cell(1,numOfDGs);
     for j = 1:numOfDGs
-        DG{i}.K{j} = K(i,j); % Use parentheses for numeric array indexing
+        DG{i}.K{j} = K{i,j};
     end
 end
 
 %% Debugging
-
 if debugMode
-
     feasibility = check(constraints);
     
     % Combine tags and feasibility into one array for sorting
     combinedList = [feasibility(:), (1:length(feasibility))'];
     
     % Sort based on the first column (feasibility values)
-    sortedList = sortrows(combinedList, 1);  % Sort by feasibility, ascending order
+    sortedList = sortrows(combinedList, 1);
     
-    % Printing
-    for i = 1:length(sortedList)
-        idx = sortedList(i, 2);  % Get the original index of the constraint
-        if feasibility(idx) < -1e-6
-            disp(['Constraint "', constraintTags{idx}, '" is violated by ', num2str(feasibility(idx)), ' .']);
-            W_val = value(constraintMats{idx})
-            for j = 1:size(W_val, 1)
-                submatrix = W_val(1:j, 1:j);  % Extract principal minor
-                if det(submatrix) < 0
-                    disp(['Principal minor ', num2str(j), ' is not positive semi-definite.']);
-                end
-            end
-        else
-            disp(['Constraint "', constraintTags{idx}, '" is satisfied by ',num2str(feasibility(idx)),' .']);
-            W_val = value(constraintMats{idx})
-        end
-    end
-
-    % costFun0Val = value(costFun0)
-    % costFunVal = value(costFun)
+    % Printing constraint status
+    % for i = 1:length(sortedList)
+    %     idx = sortedList(i, 2);
+    %     if feasibility(idx) < -1e-6
+    %         disp(['Constraint "', constraintTags{idx}, '" is violated by ', num2str(feasibility(idx)), ' .']);
+    %     else
+    %         disp(['Constraint "', constraintTags{idx}, '" is satisfied by ', num2str(feasibility(idx)), ' .']);
+    %     end
+    % end
     
-    Mat_1Eigs = eig(value(Mat_1))
-    % Mat_11Val = value(Mat_11);
-    % Mat_11Eigs = eig(Mat_11Val)
-    % 
-    
-    Mat_2Eigs = eig(value(Mat_2))
-    % Mat_22Val = value(Mat_22);
-    % Mat_22Eigs = eig(Mat_22Val)
-    % 
-    
-    Mat_3Eigs = eig(value(Mat_3))
-    % Mat_33Val = value(Mat_33);
-    % Mat_33Eigs = eig(Mat_33Val)
-    % 
-    
-    Mat_4Eigs = eig(value(Mat_4))
-    Mat_44Val = value(Mat_44);
-    Mat_44Eigs = eig(Mat_44Val)
-    Mat_4_Test1Eigs = eig(value(Mat_4_Test1))
-    Mat_4_Test2Eigs = eig(value(Mat_4_Test2))
-    Mat_4_Test3Eigs = eig(value(Mat_4_Test3))
-    value(P_i)
-    value(P_l)
-    GammaMat
-    value(gammaTilde)
-    % 
-    
-    Mat_5Eigs = eig(value(Mat_5))
-    Mat_55Val = value(Mat_55);
-    Mat_55Eigs = eig(Mat_55Val)
-    Mat_5_Test1Eigs = eig(value(Mat_5_Test1))
-    Mat_5_Test2Eigs = eig(value(Mat_5_Test2))
-    % 
-    
-    Mat_6Eigs = eig(value(Mat_6))
-    Mat_66Val = value(Mat_66);
-    Mat_66Eigs = eig(Mat_66Val)
-    Mat_6_Test1Eigs = eig(value(Mat_6_Test1))
-    Mat_6_Test2Eigs = eig(value(Mat_6_Test2))
-
-
+    % Display eigenvalues of key matrices
+    disp('Eigenvalues of W matrix:');
+    disp(eig(value(W)));
 end
 end

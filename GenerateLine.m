@@ -14,6 +14,7 @@ function Line = GenerateLine(Rl0, Ll0)
     % Generate new values for the line parameters with larger variations
     Rl = Rl0 * (1 + variationFactorRl * (2*rand() - 1));  
     Ll = Ll0 * (1 + variationFactorLl * (2*rand() - 1));  
+    
 
     % State-space matrices A and B for the transmission line
     Al = -Rl / Ll;
@@ -25,6 +26,18 @@ function Line = GenerateLine(Rl0, Ll0)
     Line.A = Al;
     Line.B = Bl;
 end
+
+% % In your simulation loop or callback function
+% for l = 1:numOfLines
+%     % Generate resistance disturbance (10% variation)
+%     delta_R_l = 0.1 * randn() * Line{l}.R;
+% 
+%     % Update the line resistance with disturbance
+%     Line{l}.R_disturbed = Line{l}.R + delta_R_l;
+% 
+%     % Use this disturbed value in your simulation equations
+%     % L_l * dI_l/dt = -Line{l}.R_disturbed * I_l + (V_i - V_j)
+% end
 
 % 
 % function Line = GenerateLine(Rl0,Ll0)
